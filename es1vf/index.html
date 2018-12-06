@@ -1,0 +1,58 @@
+<html>
+	<head>
+		<title></title>
+		<meta charset="utf-8">
+		<style type="text/css">
+			body {
+				background-color: #222;
+			}
+			#main {
+				margin: 50px auto;
+				width: 40%;
+				min-width: 400px;
+				max-width: 700px;
+			}
+			.block {
+				cursor: pointer;
+				margin: 10px 0px;
+				font-family: monospace;
+				background-color: #333;
+				border: 1px solid #555;
+				padding: 20px 25px;
+				color: #fff;
+			}
+			.block.V,
+			.block.F {
+				cursor: default;
+			}
+			.block.V {
+				background-color: #353;
+				border: 1px solid #575;
+				color: #7f7;
+			}
+			.block.F {
+				background-color: #533;
+				border: 1px solid #755;
+				color: #f77;
+			}
+			.button {
+				position: fixed;
+				z-index: 1;
+				width: 30px;
+				height: 30px;
+				background-color: rgba(255,255,255,0.1);
+				border: 1px solid rgba(255,255,255,0.3);
+				border-radius: 50%;
+				top: 20px;
+				left: 20px;
+				cursor: pointer;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="main">
+		</div>
+		<div class="button"></div>
+	</body>
+</html>
+<script type="text/javascript" src="script.js"></script>

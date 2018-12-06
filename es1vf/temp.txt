@@ -1,0 +1,37 @@
+F. Aspectos de aparência numa interface com o usuário, incluem a preocupação com a quantidade do código fonte, já que esta camada oferece inúmeras possibilidades de reuso
+F. Em arquitetura distribuída, todas as classes de objetos definidas para aplicação são distribuídas. Um servidor de aplicação como o Jboss, no padrão J2EE, gera os stubs e skeletons para todas as classes;
+F. Escalabilidade é a possibilidade que a aplicação desenvolvida oferece de permitir várias manutenções evolutivas ao longo de seu ciclo de vida
+F. Manter íntegro todos os artefatos gerados durante uma manutenção de sistemas é importante, mas não necessário, pois os artefatos gerados na análise e projeto só serviram para criar o novo software
+F. Manutenção evolutiva consiste em realizar ajustes, decorrentes, por exemplo de troca do servidor de banco de dados
+F. No modelo cliente/servidor onde o cliente é "gordo", se cria pool de conexões com o Banco de Dados como forma de maximizar o uso do gerenciador de banco de dados
+F. Num teste unitário (teste de unidade) pode ser aplicado apenas o conceito de teste caixa branca
+F. Numa arquitetura cliente/servidor, o modelo de cliente-gordo estabelece o princípio que a aplicação da interface gráfica é executada totalmente no micro do usuário, enquanto a aplicação referente à camada de negócio e banco de dados sempre está em outro servidor
+F. Numa arquitetura distribuída, o gerenciamento do ambiente computacional é simplificado em relação a um modelo de processamento centralizado, uma vez que as interfaces de administração são gráficas e os computadores servidores são de menor porte
+F. O controle transacional e todo aspecto relacionado a uma transação e suas propriedades são detalhes exclusivamente tratados pelo gerenciador de banco de dados, não afetando em nenhum aspecto a aplicação
+F. RMI é um protocolo de comunicação entre simples objetos JAVA
+F. Teste estrutural ou caixa preta é um tipo de teste cujo objetivo é avaliar o software se ele está correto sob os aspectos funcionais, mas sem conhecer suas estruturas internas
+F. Teste é essencialmente uma atividade para detectar se o software construído (código fonte) não tem erros
+F. Um dos desafios durante a manutenção de software é mudar totalmente a arquitetura de desenvolvimento do software, já que, o software é flexível e feito para isso
+F. Uma arquitetura define o QUE deve ser feito. A codificação define COMO deve ser feito
+F. Uma programação essencialmente orientada a eventos é uma forma de programação estruturada
+F. Uma programação orientada a eventos é uma programação OO
+F. Usabilidade/Navegabilidade, combinação de cores, reuso de código fonte, coesão do código, são apenas aspectos estruturais a serem considerados numa interface com o usuário
+F. Verificação é uma atividade relacionada a TESTES, da qual o principal objetivo é verificar se os artefatos que estão sendo gerados estão compatíveis com os requisitos do negócio
+V. Concorrência é um aspecto da Arquitetura de Desenvolvimento para sistemas distribuídos, cujo o objetivo é tratar de como as estruturas de software suportarão acessos simultâneos aos mesmos recursos: tabelas, serviços (webservices, etc)
+V. Depuração é consequência de um teste. O objetivo é identificar a origem do erro para correção
+V. Embora um gerenciador de banco de dados ofereça controle de transação, é responsabilidade do analista definir, projetar e implementar o que é considerado uma transação na aplicação de negócio, para garantir a consistência de informações envolvidas na transação
+V. Embora um gerenciador de banco de dados ofereça controle de transação, é responsabilidade do desenvolvedor projetar e implementar uma aplicação de forma que o banco de garanta os princípios (ACID) de transação
+V. Mesmo aplicando padrões de projeto, respeitando responsabilidade de classes, incluindo classes que representam serviços, promovendo baixo acoplamento entre camadas de negócio e apresentação, é possível que a aplicação não consiga ser executada de forma distribuída se não houver uso de framework relacionado a servidor de aplicação
+V. Na manutenção de software uma das dificuldades pode ser quantificar o esforço e o custo da modificação a ser realizada, uma vez, que algumas variáveis como por exemplo arquitetura e estruturação do software pode influenciar no esforço
+V. Num teste unitário (teste de unidade) pode ser aplicado o conceito de teste caixa branca ou teste caixa preta
+V. O conceito de Portal agrega complexidade adicional no desenvolvimento e administração de tecnologia de informação, uma vez que páginas de conteúdo estático, podem ser publicadas na mesma página, onde exista um portlet representando um caso de uso de aplicação
+V. Reuso é uma técnica de programação, que evita escrever código repetido
+V. RMI é um dos protocolos de comunicação entre objetos JAVA padrão EJB
+V. RMI é um protocolo de comunicação entre objetos JAVA
+V. Teste caixa preta é um tipo de teste cujo objetivo é avaliar o software se ele está correto sob os aspectos funcionais, mas sem conhecer suas estruturas internas
+V. Um processo de qualidade em desenvolvimento de software pressupõe que os diversos artefatos gerados durante o desenvolvimento de software possam ser verificados e validados, ou seja, possam ser homologáveis
+V. Um serviço em SOA (Arquitetura Orientada a Serviços) pode ser implementado de forma estruturada (numa linguagem estruturada inclusive). Desde que se projete uma interface estável entre o serviço e os clientes deste serviço
+V. Uma aplicação monolítica é um estilo de projeto e implementação que o código fonte da interface com usuário está fortemente acoplado ao código fonte das regras de negócio e acesso a banco
+V. Uma das diferenças entre um serviço e um método de classe está na granularidade da operação implementada no método
+V. Uma programação essencialmente orientada a eventos é uma forma de programação monolítica
+V. É possível, mesmo no modelo de processamento centralizado, adotar padrões de projeto em camadas
