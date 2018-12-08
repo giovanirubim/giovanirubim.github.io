@@ -1,0 +1,89 @@
+<html>
+	<head>
+		<title></title>
+		<style type="text/css">
+			.main {
+				margin-top: 200px;
+				font-size: 32px;
+				font-family: monospace;
+				text-align: center;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="main"></div>
+	</body>
+</html>
+<script type="text/javascript">
+	var piecesNames = "Peão,Cavalo,Bispo,Torre,Rainha,Rei".split(",");
+	var colorsNames = "pret,branc".split(",");
+	var piecesQtds = [8, 2, 2, 2, 1, 1];
+	var house = [];
+	var pieces = [];
+	for (var i=8; i--;) {
+		house[i] = new Array(8).fill(null);
+	}
+	function shuffle(array) {
+		for (var i=array.length; i;) {
+			var j = Math.floor(Math.random()*i);
+			var item = array[--i];
+			array[i] = array[j];
+			array[j] = item;
+		}
+		return array;
+	}
+	for (var a=0; a<2; a++) {
+		var color = colorsNames[a];
+		for (var b=0; b<6; ++b) {
+			var name = piecesNames[b];
+			if (name === "Torre" || name === "Rainha") {
+				name += " " + color + "a";
+			} else {
+				name += " " + color + "o";
+			}
+			var n = piecesQtds[b];
+			for (var c=0; c<n; ++c) {
+				pieces.push(name);
+			}
+		}
+	}
+	shuffle(pieces);
+	function freeCells(forPawns) {
+		var a = 0, b = 7;
+		if (forPawns) {
+			a ++;
+			b --;
+		}
+		var array = [];
+		for (var i=a; i<=b; ++i) {
+			for (var j=0; j<8; ++j) {
+				if (!house[i][j]) {
+					var letter = String.fromCharCode(97 + j);
+					array.push({
+						text: letter + (i+1),
+						row: i,
+						col: j
+					});
+				}
+			}
+		}
+		return array;
+	}
+	function next() {
+		if (pieces.length === 0) return;
+		var piece = pieces.splice(0, 1)[0];
+		var cells;
+		cells = freeCells(piece[0] === "P");
+		shuffle(cells);
+		var cell = cells[0];
+		house[cell.row][cell.col] = true;
+		var str = piece + " na " + cell.text;
+		document.querySelector(".main").innerHTML = str;
+	}
+	next();
+	window.addEventListener("mousedown", function(e){
+		e.preventDefault();
+		e.stopPropagation();
+		next();
+	});
+</script>
