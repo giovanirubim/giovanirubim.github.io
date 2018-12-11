@@ -4,9 +4,9 @@ F. A diferença básica entre agregação e composição é que na agregação o
 F. Casos de heranças são definidos pelos requisitos e conceitos presentes dentro do escopo do software a  ser desenvolvido e pela conveniência que o programador vê em economizar código durante a programação.
 F. Classe abstrata é um tipo de classe auxiliar que aparece em modelagens um pra um, numa relação de agregação ou composição principalmente.
 F. Classe transiente é um tipo de classe persistente, onde suas instâncias podem ser gravadas em tabelas diferentes no sgbd.
-F. Dentro de um processo de desenvolvimento com paradigma oo, para chegar ao diagrama de classes é necessário primeiramente fazer o modelo E-R.
+F. Dentro de um processo de desenvolvimento com paradigma OO, para chegar ao diagrama de classes é necessário primeiramente fazer o modelo E-R.
 F. Dependência é um tipo especial de herança.
-F. Em oo, a única origem para s efazer o diagrama de classes de negócio é a partir do protótipo de telas validado com o cliente.
+F. Em OO, a única origem para s efazer o diagrama de classes de negócio é a partir do protótipo de telas validado com o cliente.
 F. Modelo E-R é um artefato, geralmente realizado em iterações de iniciação.
 F. Numa arquitetura em camadas as classes do tipo entidade presentes na camada de apresentação servem para buscar as informações disponíveis no banco de dados. Desta forma esta camada é capaz de mostrar as informações solicitadas pelo usuário.
 F. O diagrama de classes de negócio, representa o modelo estrutural e comportamental, servindo .
@@ -24,14 +24,15 @@ V. Boas práticas de modelagem indicam que é desaconselhável haver referência
 V. Boas práticas de software indicam definição de estrutura de heranças em hierarquias equilibradas, onde especialisações compartilham o mesmo nível de abstração.
 V. Classes de associação * p/ * são especificadas dependendo da natureza do relacionamento. Se o relacionamento possui atributos ou comportamentos, sim, se não, sua necessidade dependerá do projeto para camada de persistência.
 V. Composição e agregação são tipos especiais de associação entre objetos. A composição, quando modelada, significa que o objeto parte tem seu ciclo de vida dependente do objeto todo.
-V. Em oo o modelo E-R para banco de dados relacional é definido a partir do diagrama de classes já definido.
+V. Em OO o modelo E-R para banco de dados relacional é definido a partir do diagrama de classes já definido.
 V. Java não implementa herança múltipla.
 V. Modelo E-R é um artefato, geralmente realiazdo na fase de elaboração.
-V. O diagrama de classes de negócio representa o modelo estrutural e também serve para demonstrar o entendimento capturado durante o levantamento de requisitos e guiando assim toda a estrutura do software a ser desenvolvido.
-V. Polimorfismo é uma característica de oo, da qual facilita a criação de frameworks, componentes.
+V. Polimorfismo é uma característica de OO, da qual facilita a criação de frameworks, componentes.
 V. Um caso de uso define uma atividade específica bem definida em que um ou vários atores participam.
 V. Um diagrama de classes é um produto tanto de análise quanto de projeto.
 V. Um pacote (package) é um elemento de agrupamento, assim como classes, que agrupam atributos de um mesmo objeto.
 V. Um protótipo de telas de um sistema é um artefato de projeto que serve para validar requisitos.
 V. Um use-case define uma atividade específica bem definida em que um ou vários atores participam.
 V. Uma abstração representa uma realidade específica, sob um determinado foco.
+F. Em OO, o diagrama de classes de negócio é formado a partir do protótipo (pode ser um desenho em papel, feito durante um detalhamento de um grupo de casos de uso) validado com o cliente.
+V. O diagrama de classes de negócio representa o modelo estrutural e também serve para demonstrar o entendimento capturado durante o levantamento de requisitos e guiando assim toda a estrutura do software a ser desenvolvido.
