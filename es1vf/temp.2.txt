@@ -1,0 +1,37 @@
+?. Camada de persistência são métodos presentes numa classe persistente cujo objeto é salvar as informações do objeto num meio estável qualquer, por exemplo, um banco de dados.
+?. Uma classe representa objetos do mesmo tipo. Portanto a especificação desta classe deve ser compatível com os conceitos associados a este objeto.
+F. A diferença básica entre agregação e composição é que na agregação o clico de vida do objeto parte é completamente dependente do clico de vida do objeto todo.
+F. Casos de heranças são definidos pelos requisitos e conceitos presentes dentro do escopo do software a  ser desenvolvido e pela conveniência que o programador vê em economizar código durante a programação.
+F. Classe abstrata é um tipo de classe auxiliar que aparece em modelagens um pra um, numa relação de agregação ou composição principalmente.
+F. Classe transiente é um tipo de classe persistente, onde suas instâncias podem ser gravadas em tabelas diferentes no sgbd.
+F. Dentro de um processo de desenvolvimento com paradigma oo, para chegar ao diagrama de classes é necessário primeiramente fazer o modelo E-R.
+F. Dependência é um tipo especial de herança.
+F. Em oo, a única origem para s efazer o diagrama de classes de negócio é a partir do protótipo de telas validado com o cliente.
+F. Modelo E-R é um artefato, geralmente realizado em iterações de iniciação.
+F. Numa arquitetura em camadas as classes do tipo entidade presentes na camada de apresentação servem para buscar as informações disponíveis no banco de dados. Desta forma esta camada é capaz de mostrar as informações solicitadas pelo usuário.
+F. O diagrama de classes de negócio, representa o modelo estrutural e comportamental, servindo .
+F. Relação de agregação é uma relação "é um tipo" enquanto herança, é uma relação "todo/parte".
+F. Sobrecarga de operações é uma característica de codificação onde se implementa numa mesma classe métodos com nomes diferentes mas com parâmetros iguais.
+F. Um relacionamento de agregação entre classes de pacotes diferentes não cria uma relação de dependência entre pacotes, somente entre as classes envolvidas.
+F. Um relacionamento de composição entre classes de pacotes diferentes cria uma relação de dependência entre os pacotes, mas um relacionamento de dependência não.
+F. Uma camada contém componentes de software bem projetados, que são compostos por classes. A especificação e responsabilidades destas classes não precisam ser necessariamente compatíveis com o objetivo e responsabilidade geral de uma camada de software.
+F. Uma classe transiente representa objetos cuja as informações não são guardadas em um banco de dados relacional, apenas em arquivo tipo texto.
+F. É na fase de iniciação onde há especificação total de um sistema a ser construído.
+V. Ajustes em diagrama de classes de negócio, como herança, eventuais tratamento de associação via agregação e composição podem ser feitas em vários momentos do projeto. É natural que eventualmente estes ajustes sejam feitos durante a especificação de aspectos comportamentais do software.
+V. Algumas heranças são definidas não somente pelos requisitos e conceitos presentes dentro do escopo do software a ser desenvolvido, mas também pelo entendimento de qual contexto que o futuro software será está inserido.
+V. Alta coesão e baixo acoplamento são metas de um bom projeto. Por exemplo, alta coesão significa que um método de classe execute somente e tão somente a tarefa restrita, compatível com seu objetivo, exigindo pouca interação com outras estruturas.
+V. Boas práticas de modelagem indicam que é desaconselhável haver referência circular entre classes e/ou pacotes.
+V. Boas práticas de software indicam definição de estrutura de heranças em hierarquias equilibradas, onde especialisações compartilham o mesmo nível de abstração.
+V. Classes de associação * p/ * são especificadas dependendo da natureza do relacionamento. Se o relacionamento possui atributos ou comportamentos, sim, se não, sua necessidade dependerá do projeto para camada de persistência.
+V. Composição e agregação são tipos especiais de associação entre objetos. A composição, quando modelada, significa que o objeto parte tem seu ciclo de vida dependente do objeto todo.
+V. Em oo o modelo E-R para banco de dados relacional é definido a partir do diagrama de classes já definido.
+V. Java não implementa herança múltipla.
+V. Modelo E-R é um artefato, geralmente realiazdo na fase de elaboração.
+V. O diagrama de classes de negócio representa o modelo estrutural e também serve para demonstrar o entendimento capturado durante o levantamento de requisitos e guiando assim toda a estrutura do software a ser desenvolvido.
+V. Polimorfismo é uma característica de oo, da qual facilita a criação de frameworks, componentes.
+V. Um caso de uso define uma atividade específica bem definida em que um ou vários atores participam.
+V. Um diagrama de classes é um produto tanto de análise quanto de projeto.
+V. Um pacote (package) é um elemento de agrupamento, assim como classes, que agrupam atributos de um mesmo objeto.
+V. Um protótipo de telas de um sistema é um artefato de projeto que serve para validar requisitos.
+V. Um use-case define uma atividade específica bem definida em que um ou vários atores participam.
+V. Uma abstração representa uma realidade específica, sob um determinado foco.
