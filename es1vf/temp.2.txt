@@ -1,2 +1,0 @@
-?. Camada de persistência são métodos presentes numa classe persistente cujo objeto é salvar as informações do objeto num meio estável qualquer, por exemplo, um banco de dados.
-?. Uma classe representa objetos do mesmo tipo. Portanto a especificação desta classe deve ser compatível com os conceitos associados a este objeto.
