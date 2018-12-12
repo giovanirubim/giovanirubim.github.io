@@ -137,11 +137,16 @@ function reset() {
 	array.forEach(obj=>addBlock(obj));
 }
 document.querySelector(".button").addEventListener("click", reset);
+var lastSearch = "";
 document.querySelector("input").addEventListener("keyup", function(){
-	if (this.value === "") {
+	if (this.value.trim() === lastSearch.trim()) {
+		return;
+	} else if (this.value === "") {
+		lastSearch = "";
 		reset();
 		return;
 	}
+	lastSearch = this.value;
 	var result = [];
 	var str = " " + filter(this.value);
 	sorted.forEach(obj=>{
