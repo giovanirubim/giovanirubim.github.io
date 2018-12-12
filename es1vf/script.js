@@ -1,4 +1,4 @@
-var array = [
+var sorted = [
 	{"type": "F", "text": "A diferença básica entre agregação e composição é que na agregação o clico de vida do objeto parte é completamente dependente do clico de vida do objeto todo"},
 	{"type": "F", "text": "Aspectos de aparência numa interface com o usuário, incluem a preocupação com a quantidade do código fonte, já que esta camada oferece inúmeras possibilidades de reuso"},
 	{"type": "F", "text": "Casos de heranças são definidos pelos requisitos e conceitos presentes dentro do escopo do software a  ser desenvolvido e pela conveniência que o programador vê em economizar código durante a programação"},
@@ -72,6 +72,7 @@ var array = [
 	{"type": "V", "text": "Um use-case define uma atividade específica bem definida em que um ou vários atores participam"},
 	{"type": "V", "text": "Uma abstração representa uma realidade específica, sob um determinado foco"},
 ];
+var array = sorted.slice(0, sorted.length);
 function shuffle() {
 	function swap(a, b) {
 		var aux = array[a];
@@ -141,8 +142,17 @@ document.querySelector("input").addEventListener("keyup", function(){
 		reset();
 		return;
 	}
-	main.innerHTML = "";
+	var result = [];
 	var str = " " + filter(this.value);
-	array.forEach(obj=>obj.filtered.indexOf(str)>=0?addBlock(obj, true):0);
+	sorted.forEach(obj=>{
+		var i = obj.filtered.indexOf(str)
+		if (i == 0) {
+			result.splice(0, 0, obj);
+		} else if (i > 0) {
+			result.push(obj);
+		}
+	});
+	main.innerHTML = "";
+	result.forEach(obj=>addBlock(obj, true));
 });
 reset();
