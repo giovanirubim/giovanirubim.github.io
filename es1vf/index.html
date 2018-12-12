@@ -24,11 +24,19 @@
 				padding: 5px;
 				font-size: 16px;
 			}
+			#mainwrap {
+				overflow: auto;
+				position: absolute;
+				top: 50px;
+				left: 0px;
+				right: 0px;
+				bottom: 0px;
+			}
 			#main {
-				margin: 100px auto 50px auto;
-				width: 40%;
+				margin: 50px auto 50px auto;
+				width: 50%;
 				min-width: 400px;
-				max-width: 700px;
+				max-width: 800px;
 			}
 			.block {
 				cursor: pointer;
@@ -74,8 +82,7 @@
 		<div id="search">
 			<input type="text">
 		</div>
-		<div id="main">
-		</div>
+		<div id="mainwrap"><div id="main"></div></div>
 		<div class="button"></div>
 	</body>
 </html>
