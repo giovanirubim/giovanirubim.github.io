@@ -128,6 +128,8 @@
 	var sx = null;
 	var sy = null;
 	var target = new Date(2019,0,10,20,0);
+	var timeZoneFix = (target.getTimezoneOffset() - 120);
+	target.setMinutes(target.getMinutes() + timeZoneFix);
 
 	function updateProgress() {
 		var now = new Date();
