@@ -98,7 +98,9 @@
 		var palavra = input.value;
 		if (palavra.trim().toUpperCase() === nextWord.trim().toUpperCase()) {
 			advance();
+			input.value = " ";
 		}
+		input.select();
 	});
 	document.querySelector("#dunno").addEventListener("click", _=>{
 		advance();
