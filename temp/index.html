@@ -74,6 +74,9 @@
 			text += vSep[i];
 		}
 		nextWord = vWord[i];
+		if (text.length > 200) {
+			text = text.substr(text.length - 200);
+		}
 		document.querySelector("div").innerText = text;
 	}
 	function update() {
