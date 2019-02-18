@@ -12,7 +12,7 @@
 		<script type="text/javascript" src="textos.js"></script>
 	</head>
 	<body>
-		<input type="button" value="Recomeçar">
+		<input type="button" value="Recomeçar" id="reset">
 		<input type="button" value="Não sei" id="dunno">
 		<div id="texto"></div>
 		<input type="text" placeholder="Palavra">
@@ -110,4 +110,5 @@
 		update();
 	}
 	reset();
+	document.querySelector("#dunno").addEventListener("click", reset);
 </script>
