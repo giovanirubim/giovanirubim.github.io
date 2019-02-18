@@ -1,0 +1,113 @@
+<html>
+	<head>
+		<title></title>
+		<meta charset="utf-8">
+		<style type="text/css">
+			div {
+				padding: 20px;
+				border: 1px solid #000;
+				margin: 10px 0px;
+			}
+		</style>
+		<script type="text/javascript" src="textos.js"></script>
+	</head>
+	<body>
+		<input type="button" value="Recomeçar">
+		<input type="button" value="Não sei" id="dunno">
+		<div id="texto"></div>
+		<input type="text" placeholder="Palavra">
+		<input type="button" value="Tentar" id="go">
+	</body>
+</html>
+<script type="text/javascript">
+	var nextWord = null;
+	var currentText;
+	var currentN;
+	var delta = _ => Math.floor(Math.random()*3) + 1;
+	function split(texto) {
+		var vWord = [];
+		var vSep = [];
+		var buffer = "";
+		var state = "waiting";
+		for (var i=0; i<texto.length; ++i) {
+			var c = texto[i];
+			var isSep = c === ' ' || c === '.' || c === ',';
+			if (state === "waiting") {
+				if (isSep) {
+					state = "sep";
+				} else {
+					state = "word";
+				}
+				buffer = c;
+			} else if (state === "sep") {
+				if (isSep) {
+					buffer += c;
+				} else {
+					state = "word";
+					vSep.push(buffer);
+					buffer = c;
+				}
+			} else {
+				if (!isSep) {
+					buffer += c;
+				} else {
+					state = "sep";
+					vWord.push(buffer);
+					buffer = c;
+				}
+			}
+		}
+		return {
+			vWord: vWord,
+			vSep: vSep
+		}
+	}
+	var t1 = split(texto_1);
+	var t2 = split(texto_2);
+	var vT = [t1, t2];
+	function goUntil(n, t) {
+		let text = "";
+		let vWord = t.vWord;
+		let vSep = t.vSep;
+		for (var i=0; i < n && i < vWord.length; i++) {
+			text += vWord[i];
+			text += vSep[i];
+		}
+		nextWord = vWord[i];
+		document.querySelector("div").innerText = text;
+	}
+	function update() {
+		var t = vT[currentText];
+		var n = currentN;
+		goUntil(n, t);
+	}
+	function advance() {
+		currentN += delta();
+		update();
+		if (nextWord == null) {
+			if (++ currentText === 1) {
+				currentN = 3;
+				update();
+			} else {
+				reset();
+			}
+		}
+	}
+	document.querySelector("#go").addEventListener("click", _=>{
+		var input = document.querySelector("input[type='text']");
+		var palavra = input.value;
+		if (palavra.trim().toUpperCase() === nextWord.trim().toUpperCase()) {
+			advance();
+		}
+	});
+	document.querySelector("#dunno").addEventListener("click", _=>{
+		advance();
+	});
+	function reset() {
+		nextWord = null;
+		currentText = 0;
+		currentN = 2 + delta();
+		update();
+	}
+	reset();
+</script>
