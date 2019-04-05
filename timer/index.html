@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'/>
+		<meta charset="utf-8"/>
+		<style type="text/css">
+			body {
+				margin: 0px;
+				font-size: 0px;
+			}
+		</style>
+		<title></title>
+	</head>
+	<body></body>
+</html>
+<script type="text/javascript">
+	function Vec2(x, y) {
+		if (x instanceof Vec2) {
+			y = x.array[1];
+			x = x.array[0];
+		}
+		if (x === undefined) x = 0;
+		if (y === undefined) y = x;
+		this.array = [x, y];
+	}
+	Vec2.prototype.sub = function(x, y) {
+		if (x instanceof Vec2) {
+			y = x.array[1];
+			x = x.array[0];
+		}
+		if (y === undefined) y = x;
+		var array = this.array;
+		return new Vec2(array[0] - x, array[1] - y);
+	};
+	Vec2.prototype.add = function(x, y) {
+		if (x instanceof Vec2) {
+			y = x.array[1];
+			x = x.array[0];
+		}
+		if (y === undefined) y = x;
+		var array = this.array;
+		return new Vec2(array[0] + x, array[1] + y);
+	};
+	Vec2.prototype.mul = function(x, y) {
+		if (x instanceof Vec2) {
+			y = x.array[1];
+			x = x.array[0];
+		}
+		if (y === undefined) y = x;
+		var array = this.array;
+		return new Vec2(array[0]*x, array[1]*y);
+	};
+	Vec2.prototype.div = function(x, y) {
+		if (x instanceof Vec2) {
+			y = x.array[1];
+			x = x.array[0];
+		}
+		if (y === undefined) y = x;
+		var array = this.array;
+		return new Vec2(array[0]/x, array[1]/y);
+	};
+	Vec2.prototype.set = function(x, y) {
+		if (x instanceof Vec2) {
+			y = x.array[1];
+			x = x.array[0];
+		}
+		if (y === undefined) y = x;
+		var array = this.array;
+		array[0] = x;
+		array[1] = y;
+		return this;
+	};
+	Vec2.prototype.equals = function(x, y) {
+		if (x instanceof Vec2) {
+			y = x.array[1];
+			x = x.array[0];
+		}
+		if (y === undefined) y = x;
+		var array = this.array;
+		return array[0] === x && array[1] === y;
+	};
+	Vec2.prototype.x = function() {
+		return this.array[0];
+	};
+	Vec2.prototype.y = function() {
+		return this.array[1];
+	};
+	function vec2(x, y) {
+		return new Vec2(x, y);
+	}
+	function Clock() {
+		this.ms = null;
+		this.initialMs = null;
+		this.increment = null;
+		this.timeFlag = null;
+	}
+	Clock.prototype.setup = function(initialMs, increment) {
+		this.initialMs = initialMs;
+		this.increment = increment;
+		this.reset();
+		return this;
+	};
+	Clock.prototype.reset = function() {
+		this.ms = this.initialMs;
+		this.timeFlag = null;
+		return this;
+	};
+	Clock.prototype.time = function(now) {
+		var ms = this.ms;
+		var timeFlag = this.timeFlag;
+		if (timeFlag === null) {
+			return ms;
+		}
+		var time = ms - (now - timeFlag);
+		if (time <= 0) {
+			this.ms = 0;
+			this.timeFlag = null;
+			return 0;
+		}
+		return time;
+	};
+	Clock.prototype.pause = function(now) {
+		var timeFlag = this.timeFlag;
+		if (timeFlag !== null) {
+			this.ms -= now - timeFlag;
+			this.timeFlag = null;
+		}
+		return this;
+	};
+	Clock.prototype.toggle = function(now) {
+		var timeFlag = this.timeFlag;
+		var increment = this.increment;
+		if (timeFlag === null) {
+			this.timeFlag = now;
+		} else {
+			this.ms -= now - timeFlag + increment;
+			this.timeFlag = null;
+		}
+		return this;
+	}
+	var clocks = [new Clock(), new Clock()];
+	var measures = {
+		start: vec2(),
+		screenSize: vec2(),
+		innerSize: vec2(),
+		scale: null,
+		fixed: {
+			ratio: null,
+			referenceWidth: null
+		},
+		relative: {
+			margin: 5,
+			buttonSize: 25,
+			clockRadius: 80,
+			barWidth: 30,
+			clockBorderWidth: 18,
+			lineWidth: 2,
+			fontSize: 40
+		},
+		scaled: {}
+	};
+	function initializeMeasures() {
+		var fixed = measures.fixed;
+		var relative = measures.relative;
+		var clockRadius = relative.clockRadius
+		var barWidth = relative.barWidth
+		var margin = relative.margin
+		var width = margin*2 + clockRadius*4 + barWidth;
+		var height = margin*2 + clockRadius*2;
+		fixed.referenceWidth = width;
+		fixed.ratio = width/height;
+	};
+	function updateMeasures() {
+		var screenSize = measures.screenSize;
+		var newScreenSize = vec2(innerWidth, innerHeight);
+		if (screenSize.equals(newScreenSize)) {
+			return false;
+		}
+		screenSize.set(newScreenSize);
+		var start = measures.start;
+		var innerSize = measures.innerSize;
+		var fixed = measures.fixed;
+		var relative = measures.relative;
+		var scaled = measures.scaled;
+		var ratio = fixed.ratio;
+		var referenceWidth = fixed.referenceWidth;
+		var screenRatio = screenSize.x()/screenSize.y();
+		if (screenRatio > ratio) {
+			innerSize.set(screenSize.y()*ratio, screenSize.y());
+		} else {
+			innerSize.set(screenSize.x(), screenSize.x()/ratio);
+		}
+		start.set(screenSize.sub(innerSize).div(2));
+		var scale = innerSize.x()/referenceWidth;
+		if (scale === measures.scale) {
+			return true;
+		}
+		measures.scale = scale;
+		for (var prop in relative) {
+			scaled[prop] = relative[prop]*scale;
+		}
+		return true;
+	};
+	var canvas = document.createElement("canvas");
+	var ctx = canvas.getContext("2d");
+	document.body.appendChild(canvas);
+	function getColor(val, alpha) {
+		var r0 = 255;
+		var g0 = 50;
+		var b0 = 20;
+		var r1 = 0;
+		var g1 = 255;
+		var b1 = 100;
+		var inv = 1 - val;
+		return "rgba("
+			+ Math.round(r0*inv + r1*val) + ", "
+			+ Math.round(g0*inv + g1*val) + ", "
+			+ Math.round(b0*inv + b1*val) + ", "
+			+ alpha + ")";
+	};
+	function drawClock(clock, x, now) {
+		var screenSize = measures.screenSize;
+		var scaled = measures.scaled;
+		var clockBorderWidth = scaled.clockBorderWidth;
+		var lineWidth = scaled.lineWidth;
+		var clockRadius = scaled.clockRadius;
+		var fontSize = scaled.fontSize;
+		var y = screenSize.y()/2;
+		var rad = clockRadius - clockBorderWidth*0.5;
+		var time = clock.time(now);
+		var val = time/clock.initialMs;
+		val = val > 1 ? 1 : val < 0 ? 0 : val;
+		var color = getColor(val, 1);
+		ctx.textBaseline = "middle";
+		ctx.textAlign = "center";
+		ctx.lineWidth = clockBorderWidth;
+		ctx.strokeStyle = color;
+		ctx.fillStyle = color;
+		ctx.beginPath();
+		ctx.arc(x, y, rad, Math.PI*(3.5 - val*2), Math.PI*3.5);
+		ctx.stroke();
+		rad = clockRadius - clockBorderWidth - lineWidth*2.5;
+		ctx.lineWidth = lineWidth;
+		ctx.beginPath();
+		ctx.arc(x, y, rad, 0, Math.PI*2);
+		ctx.stroke();
+		var sec = Math.floor((time % 60000)/10)/100;
+		var min = Math.floor(time/60000);
+		sec = sec < 10 ? sec = "0" + sec : sec.toString();
+		if (sec.indexOf(".") < 0) {
+			sec += ".00";
+		}
+		sec += "0".repeat(5 - sec.length);
+		sec = sec.replace(".", ",");
+		min = min < 10 ? "0" + min : min.toString();
+		ctx.font = fontSize*0.5 + "px monospace";
+		ctx.fillText(sec, x, y + fontSize*0.35);
+		ctx.font = fontSize + "px monospace";
+		ctx.fillText(min, x, y - fontSize*0.35);
+	};
+	function updateCanvas() {
+		var now = (new Date())*1;
+		var clock1 = clocks[0];
+		var clock2 = clocks[1];
+		var start = measures.start;
+		var screenSize = measures.screenSize;
+		var innerSize = measures.innerSize;
+		var scaled = measures.scaled;
+		if (updateMeasures()) {
+			canvas.width = screenSize.x();
+			canvas.height = screenSize.y();
+		}
+		if (clock1.time(now) === 0 || clock2.time(now) === 0) {
+			ctx.fillStyle = "#fff";
+		} else {
+			ctx.fillStyle = "#000";
+		}
+		ctx.fillRect(0, 0, screenSize.x(), screenSize.y());
+		var margin = scaled.margin;
+		var clockRadius = scaled.clockRadius;
+		var x = start.x() + margin + clockRadius;
+		drawClock(clock1, x, now);
+		drawClock(clock2, screenSize.x() - x, now);
+	};
+	clocks[0].setup(600000, 0);
+	clocks[1].setup(600000, 0);
+	initializeMeasures();
+	setInterval(updateCanvas, 0);
+	function touchHandler(e) {
+		var clock1 = clocks[0];
+		var clock2 = clocks[1];
+		var touch = (e.changedTouches || e.touches)[0];
+		var index = 0 | (touch.clientX > measures.screenSize.x()*0.5);
+		var clock = clocks[index];
+		var other = clocks[1 - index];
+		var now = new Date();
+		if (clock1.timeFlag === null && clock2.timeFlag === null) {
+			other.toggle(now);
+		} else if (clock.timeFlag !== null) {
+			clock.toggle(now);
+			other.toggle(now);
+		}
+	}
+	canvas.addEventListener("touchstart", touchHandler);
+</script>
