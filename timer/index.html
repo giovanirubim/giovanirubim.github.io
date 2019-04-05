@@ -157,10 +157,12 @@
 			margin: 5,
 			buttonSize: 25,
 			clockRadius: 80,
-			barWidth: 30,
+			barWidth: 20,
 			clockBorderWidth: 18,
 			lineWidth: 2,
-			fontSize: 40
+			fontSize: 40,
+			pauseButtonTop: 15,
+			pauseButtonRadius: 15
 		},
 		scaled: {}
 	};
@@ -278,6 +280,18 @@
 		ctx.font = fontSize*c + "px monospace";
 		ctx.fillText(min, x, y - fontSize*d);
 	};
+	function drawPause() {
+		var scaled = measures.scaled;
+		var start = measures.start;
+		var screenSize = measures.screenSize;
+		var radius = measures.scaled.pauseButtonRadius;
+		var x = screenSize.x()*0.5;
+		var y = start.y() + scaled.margin + scaled.pauseButtonTop;
+		ctx.fillStyle = "#fff";
+		ctx.beginPath();
+		ctx.arc(x, y, radius, 0, Math.PI*2);
+		ctx.fill();
+	}
 	function updateCanvas() {
 		var now = (new Date())*1;
 		var clock1 = clocks[0];
@@ -301,9 +315,10 @@
 		var x = start.x() + margin + clockRadius;
 		drawClock(clock1, x, now);
 		drawClock(clock2, screenSize.x() - x, now);
+		drawPause();
 	};
-	clocks[0].setup(120000, 0);
-	clocks[1].setup(120000, 0);
+	clocks[0].setup(600000, 0);
+	clocks[1].setup(600000, 0);
 	initializeMeasures();
 	setInterval(updateCanvas, 0);
 	function touchHandler(e) {
