@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'/>
+		<meta name="theme-color" content="#222"/>
 		<meta charset="utf-8"/>
 		<style type="text/css">
 			body {
@@ -239,14 +240,22 @@
 		var time = clock.time(now);
 		var val = time/clock.initialMs;
 		val = val > 1 ? 1 : val < 0 ? 0 : val;
-		var color = getColor(val, 1);
+		var color = getColor(val, "#");
+		var color1 = color.replace("#", "1");
+		var color2 = color.replace("#", "0.375");
 		ctx.textBaseline = "middle";
 		ctx.textAlign = "center";
 		ctx.lineWidth = clockBorderWidth;
-		ctx.strokeStyle = color;
-		ctx.fillStyle = color;
+		ctx.fillStyle = color1;
+		const rad0 = Math.PI*(3.5 - val*2);
+		const rad1 = Math.PI*3.5;
+		ctx.strokeStyle = color2;
 		ctx.beginPath();
-		ctx.arc(x, y, rad, Math.PI*(3.5 - val*2), Math.PI*3.5);
+		ctx.arc(x, y, rad, rad1, rad0);
+		ctx.stroke();
+		ctx.strokeStyle = color1;
+		ctx.beginPath();
+		ctx.arc(x, y, rad, rad0, rad1);
 		ctx.stroke();
 		rad = clockRadius - clockBorderWidth - lineWidth*2.5;
 		ctx.lineWidth = lineWidth;
@@ -270,7 +279,7 @@
 		var b1 = 0.45;
 		var c1 = 1.00;
 		var d1 = 0.20;
-		var tmp = (time - 60000)/60000;
+		var tmp = (time - 30000)/60000;
 		tmp = tmp > 1 ? 1 : tmp < 0 ? 0 : tmp;
 		var inv = 1 - tmp;
 		var a = a1*tmp + a0*inv;
@@ -412,4 +421,5 @@
 		}
 	}
 	canvas.addEventListener("touchstart", touchHandler);
+	canvas.addEventListener("mousedown", touchHandler);
 </script>
