@@ -14,6 +14,11 @@
 	<body></body>
 </html>
 <script type="text/javascript">
+	function solve(x0, y0, x1, y1) {
+		var a = (y0 - y1)/(x0 - x1);
+		var b = y1 - a*x1;
+		return "x*" + a + " + " + b;
+	}
 	function Vec2(x, y) {
 		if (x instanceof Vec2) {
 			y = x.array[1];
@@ -253,10 +258,25 @@
 		sec += "0".repeat(5 - sec.length);
 		sec = sec.replace(".", ",");
 		min = min < 10 ? "0" + min : min.toString();
-		ctx.font = fontSize*0.5 + "px monospace";
-		ctx.fillText(sec, x, y + fontSize*0.35);
-		ctx.font = fontSize + "px monospace";
-		ctx.fillText(min, x, y - fontSize*0.35);
+		var a0 = 0.75;
+		var b0 = 0.2;
+		var c0 = 0.5;
+		var d0 = 0.5;
+		var a1 = 0.50;
+		var b1 = 0.45;
+		var c1 = 1.00;
+		var d1 = 0.20;
+		var tmp = (time - 60000)/60000;
+		tmp = tmp > 1 ? 1 : tmp < 0 ? 0 : tmp;
+		var inv = 1 - tmp;
+		var a = a1*tmp + a0*inv;
+		var b = b1*tmp + b0*inv;
+		var c = c1*tmp + c0*inv;
+		var d = d1*tmp + d0*inv;
+		ctx.font = fontSize*a + "px monospace";
+		ctx.fillText(sec, x, y + fontSize*b);
+		ctx.font = fontSize*c + "px monospace";
+		ctx.fillText(min, x, y - fontSize*d);
 	};
 	function updateCanvas() {
 		var now = (new Date())*1;
@@ -282,14 +302,14 @@
 		drawClock(clock1, x, now);
 		drawClock(clock2, screenSize.x() - x, now);
 	};
-	clocks[0].setup(600000, 0);
-	clocks[1].setup(600000, 0);
+	clocks[0].setup(120000, 0);
+	clocks[1].setup(120000, 0);
 	initializeMeasures();
 	setInterval(updateCanvas, 0);
 	function touchHandler(e) {
 		var clock1 = clocks[0];
 		var clock2 = clocks[1];
-		var touch = (e.changedTouches || e.touches)[0];
+		var touch = (e.changedTouches || e.touches || [e])[0];
 		var index = 0 | (touch.clientX > measures.screenSize.x()*0.5);
 		var clock = clocks[index];
 		var other = clocks[1 - index];
@@ -304,4 +324,5 @@
 		}
 	}
 	canvas.addEventListener("touchstart", touchHandler);
+	canvas.addEventListener("mousedown", touchHandler);
 </script>
