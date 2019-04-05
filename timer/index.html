@@ -144,6 +144,8 @@
 		return this;
 	}
 	var clocks = [new Clock(), new Clock()];
+	var paused = false;
+	var pausedClock = null;
 	var measures = {
 		start: vec2(),
 		screenSize: vec2(),
@@ -287,10 +289,41 @@
 		var radius = measures.scaled.pauseButtonRadius;
 		var x = screenSize.x()*0.5;
 		var y = start.y() + scaled.margin + scaled.pauseButtonTop;
-		ctx.fillStyle = "#fff";
+		var wid = radius;
+		var hig = radius;
+		var dx0 = wid*0.5;
+		var dy0 = hig*0.5;
+		var dx1 = wid*1/6;
+		var dy1 = hig*0.5;
+		ctx.strokeStyle = "#fff";
+		ctx.lineJoin = "round";
 		ctx.beginPath();
-		ctx.arc(x, y, radius, 0, Math.PI*2);
-		ctx.fill();
+		ctx.rect(x - dx0, y - dy0, wid/3, hig);
+		ctx.rect(x + dx1, y - dy0, wid/3, hig);
+		ctx.stroke();
+	}
+	function drawPlay() {
+		var scaled = measures.scaled;
+		var start = measures.start;
+		var screenSize = measures.screenSize;
+		var radius = measures.scaled.pauseButtonRadius;
+		var x = screenSize.x()*0.5;
+		var y = start.y() + scaled.margin + scaled.pauseButtonTop;
+		var len = radius*0.6;
+		ctx.lineJoin = "round";
+		ctx.strokeStyle = "#fff";
+		ctx.beginPath();
+		for (let i=0; i<3; ++i) {
+			var dx = Math.cos(i*Math.PI*2/3)*len;
+			var dy = Math.sin(i*Math.PI*2/3)*len;
+			if (i) {
+				ctx.lineTo(x + dx, y + dy);
+			} else {
+				ctx.moveTo(x + dx, y + dy);
+			}
+		}
+		ctx.closePath();
+		ctx.stroke();
 	}
 	function updateCanvas() {
 		var now = (new Date())*1;
@@ -315,20 +348,60 @@
 		var x = start.x() + margin + clockRadius;
 		drawClock(clock1, x, now);
 		drawClock(clock2, screenSize.x() - x, now);
-		drawPause();
+		if (paused) {
+			drawPlay();
+		} else {
+			drawPause();
+		}
 	};
 	clocks[0].setup(600000, 0);
 	clocks[1].setup(600000, 0);
 	initializeMeasures();
 	setInterval(updateCanvas, 0);
+	function atPauseButton(x, y) {
+		var scaled = measures.scaled;
+		var start = measures.start;
+		var screenSize = measures.screenSize;
+		var radius = measures.scaled.pauseButtonRadius;
+		var posx = screenSize.x()*0.5;
+		var posy = start.y() + scaled.margin + scaled.pauseButtonTop;
+		var dx = x - posx;
+		var dy = y - posy;
+		return Math.sqrt(dx*dx + dy*dy) <= radius;
+	}
 	function touchHandler(e) {
 		var clock1 = clocks[0];
 		var clock2 = clocks[1];
 		var touch = (e.changedTouches || e.touches || [e])[0];
-		var index = 0 | (touch.clientX > measures.screenSize.x()*0.5);
+		var x = touch.clientX;
+		var y = touch.clientY;
+		var now = new Date();
+		if (atPauseButton(x, y)) {
+			if (paused) {
+				if (pausedClock) {
+					pausedClock.toggle(now);
+				}
+			} else {
+				if (clock1.timeFlag !== null) {
+					pausedClock = clock1;
+				} else if (clock2.timeFlag !== null) {
+					pausedClock = clock2;
+				} else {
+					pausedClock = null;
+				}
+				if (pausedClock !== null) {
+					pausedClock.pause(now);
+				}
+			}
+			paused = !paused;
+			return;
+		}
+		if (paused) {
+			return;
+		}
+		var index = 0 | (x > measures.screenSize.x()*0.5);
 		var clock = clocks[index];
 		var other = clocks[1 - index];
-		var now = new Date();
 		if (clock1.timeFlag === null && clock2.timeFlag === null) {
 			if (clock1.time(now) && clock2.time(now)) {
 				other.toggle(now);
@@ -339,5 +412,4 @@
 		}
 	}
 	canvas.addEventListener("touchstart", touchHandler);
-	canvas.addEventListener("mousedown", touchHandler);
 </script>
