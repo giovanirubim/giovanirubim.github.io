@@ -295,7 +295,9 @@
 		var other = clocks[1 - index];
 		var now = new Date();
 		if (clock1.timeFlag === null && clock2.timeFlag === null) {
-			other.toggle(now);
+			if (clock1.time(now) && clock2.time(now)) {
+				other.toggle(now);
+			}
 		} else if (clock.timeFlag !== null) {
 			clock.toggle(now);
 			other.toggle(now);
