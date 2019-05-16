@@ -61,6 +61,7 @@ class ArcTimer {
 		const fontSize = lineWidth*0.6;
 		const textSpace = lineWidth*0.4;
 
+		ctx.lineJoin = "round";
 		ctx.textAlign = "right";
 		ctx.textBaseline = "middle";
 		ctx.font = fontSize + "px monospace";
