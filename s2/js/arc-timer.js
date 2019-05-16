@@ -73,7 +73,7 @@ class ArcTimer {
 			ctx.beginPath();
 			ctx.arc(cx, cy, rad, iniDeg, iniDeg + tau*p);
 			ctx.stroke();
-			ctx.lineWidth = lineWidth*0.15;
+			ctx.lineWidth = lineWidth*0.2;
 			ctx.strokeStyle = "#222";
 			ctx.strokeText(text, cx - textSpace, cy + fontSize*0.2 - rad);
 			ctx.fillText(text, cx - textSpace, cy + fontSize*0.2 - rad);
