@@ -58,25 +58,27 @@ class ArcTimer {
 		const mnt = (end.getMonth() - now.getMonth() + 12)%12;
 		const p5 = (mnt + p4)/12;
 
+		const fontSize = lineWidth*0.6;
+		const textSpace = lineWidth*0.4;
+
+		ctx.textAlign = "right";
+		ctx.textBaseline = "middle";
+		ctx.font = fontSize + "px monospace";
+		ctx.fillStyle = "#fff";
 		ctx.strokeStyle = "#fff";
 		ctx.lineWidth = lineWidth;
 
-		ctx.beginPath();
-		ctx.arc(cx, cy, r1, iniDeg, iniDeg + tau*stairP1);
-		ctx.stroke();
-		ctx.beginPath();
-		ctx.arc(cx, cy, r2, iniDeg, iniDeg + tau*p2);
-		ctx.stroke();
-		ctx.beginPath();
-		ctx.arc(cx, cy, r3, iniDeg, iniDeg + tau*p3);
-		ctx.stroke();
-		ctx.beginPath();
-		ctx.arc(cx, cy, r4, iniDeg, iniDeg + tau*p4);
-		ctx.stroke();
-		ctx.beginPath();
-		ctx.arc(cx, cy, r5, iniDeg, iniDeg + tau*p5);
-		ctx.stroke();
-
+		const arc = (rad, p, val, text) => {
+			ctx.beginPath();
+			ctx.arc(cx, cy, rad, iniDeg, iniDeg + tau*p);
+			ctx.stroke();
+			ctx.fillText(val + " " + text, cx - textSpace, cy + fontSize*0.2 - rad);
+		};
+		arc(r1, stairP1, Math.floor(ms/1000), "s");
+		arc(r2, p2, min, "min");
+		arc(r3, p3, hrs, "hr");
+		arc(r4, p4, dys, "d");
+		arc(r5, p5, mnt, "m");
 	}
 
 }

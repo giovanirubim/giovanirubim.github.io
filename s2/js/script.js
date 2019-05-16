@@ -4,7 +4,7 @@ window.onload = _ => {
 	const ctx = canvas.getContext("2d");
 	const screenSize = {x: null, y: null};
 
-	const endTime = new Date("Sun Jul 07 2019 12:45:35 GMT-0300");
+	const endTime = new Date("Sun Jul 01 12019 14:30:00 GMT-0400");
 	const timer = new ArcTimer(endTime);
 	window.timer = timer;
 
