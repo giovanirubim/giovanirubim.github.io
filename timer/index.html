@@ -363,8 +363,8 @@
 			drawPause();
 		}
 	};
-	clocks[0].setup(600000, 0);
-	clocks[1].setup(600000, 0);
+	clocks[0].setup(600000/10*15, 0);
+	clocks[1].setup(600000/10*15, 0);
 	initializeMeasures();
 	setInterval(updateCanvas, 0);
 	function atPauseButton(x, y) {
