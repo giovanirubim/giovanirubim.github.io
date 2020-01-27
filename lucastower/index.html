@@ -29,7 +29,7 @@ let block_sy;
 let txt_margin_x;
 let txt_margin_y;
 let txt_size;
-let level = 3;
+let level = 1;
 let counter = 0;
 let stocks;
 let arrow_width;
@@ -38,8 +38,9 @@ let time = '';
 
 const resetLevel = () => {
 	stocks = [[], [], []];
+	let div = Math.max(1, level-1);
 	for (let i=level; i; --i) {
-		let block = {num: i, val: (i-1)/(level-1)};
+		let block = {num: i, val: (i-1)/div};
 		setRandomColors(block);
 		stocks[0].push(block);
 	}
@@ -207,7 +208,18 @@ const handleMouseup = (x, y) => {
 	currentPos = null;
 	render();
 };
+
+let won = false;
 const move = (a, b) => {
+	if (won) {
+		if (counter == Math.pow(2, level) - 1) {
+			++level;
+		}
+		counter = 0;
+		resetLevel();
+		won = false;
+		return true;
+	}
 	a = stocks[a];
 	b = stocks[b];
 	if (!a.length) return false;
@@ -219,8 +231,8 @@ const move = (a, b) => {
 	let block = a.splice(a.length-1, 1)[0];
 	b.push(block);
 	++ counter;
-	if (t0 == null) {
-		t0 = new Date();
+	if (!stocks[0].length && !stocks[1].length) {
+		won = true;
 	}
 	return true;
 };
