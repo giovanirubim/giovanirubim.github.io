@@ -1,0 +1,231 @@
+<html>
+<head>
+	<title></title>
+	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'/>
+	<style type='text/css'>
+		body {
+			margin: 0px;
+			font-size: 0px;
+		}
+	</style>
+</head>
+	<body>
+		<canvas></canvas>
+	</body>
+</html>
+<script type='text/javascript'>
+
+let sx;
+let sy;
+let cx;
+let stock_sx;
+let stock_sy;
+let stock_y0;
+let stock_shift;
+let block_max_sx;
+let block_min_sx;
+let block_delta_x;
+let block_sy;
+let txt_margin_x;
+let txt_margin_y;
+let txt_size;
+let level = 3;
+let counter = 0;
+let stocks;
+let arrow_width;
+let t0, t1;
+let time = '';
+
+const resetLevel = () => {
+	stocks = [[], [], []];
+	for (let i=level; i; --i) {
+		let block = {num: i, val: (i-1)/(level-1)};
+		setRandomColors(block);
+		stocks[0].push(block);
+	}
+};
+
+let setRandomColors = block => {
+	let [r, g, b] = [100, 90, 60];
+	let r1 = Math.random()*0.4 + 0.6;
+	r = Math.round(r*r1 + Math.random()*15);
+	g = Math.round(g*r1);
+	b = Math.round(b*r1);
+	block.b = 'rgb('+r+', '+g+', '+b+')';
+	r = Math.round(r*0.3);
+	g = Math.round(g*0.3);
+	b = Math.round(b*0.3);
+	block.a = 'rgb('+r+', '+g+', '+b+')';
+};
+
+const nearest = x => {
+	let res = null;
+	let dis = Infinity;
+	for (let i=-1; i<=1; ++i) {
+		let pos = cx + stock_shift*i;
+		let d = Math.abs(pos - x);
+		if (d < dis) {
+			dis = d;
+			res = i + 1;
+		}
+	}
+	return res;
+};
+
+const canvas = document.querySelector('canvas');
+const ctx = canvas.getContext('2d');
+const resize = () => {
+	let x = window.innerWidth;
+	let y = window.innerHeight;
+	if (x === sx && y === sy) return false;
+	canvas.width  = sx = x;
+	canvas.height = sy = y;
+	cx = sx*0.5;
+	stock_sx = sx*0.03;
+	stock_sy = sy*0.6;
+	stock_shift = sx/4;
+	stock_y0 = sy - stock_sy;
+	block_max_sx = stock_shift*0.9;
+	block_min_sx = stock_sx*2.5;
+	block_delta_x = block_max_sx - block_min_sx;
+	block_sy = Math.min(stock_sy*0.8/level, stock_sx*1.5);
+	txt_margin_x = txt_margin_y = stock_sx;
+	txt_size = stock_sx*2;
+	arrow_width = stock_sx*0.5;
+	render();
+};
+
+let startPos = null;
+let currentPos = null;
+
+const render = () => {
+	ctx.fillStyle = '#000';
+	ctx.fillRect(0, 0, sx, sy);
+	ctx.lineWidth = stock_sx;
+	ctx.lineCap = 'round';
+	for (let i=-1; i<=1; ++i) {
+		let x = cx + i*stock_shift;
+		let x0 = x - stock_sx/2;
+		let x1 = x + stock_sx/2;
+		let grd = ctx.createLinearGradient(x0, 0, x1, 0);
+		if (i < 1) {
+			grd.addColorStop(0, '#222');
+			grd.addColorStop(1, '#666');
+		} else {
+			grd.addColorStop(0, '#300');
+			grd.addColorStop(1, '#a33');
+		}
+		ctx.strokeStyle = grd;
+		ctx.beginPath();
+		ctx.moveTo(x, stock_y0);
+		ctx.lineTo(x, sy);
+		ctx.stroke();
+	}
+	ctx.lineWidth = 1;
+	ctx.strokeStyle = '#000'
+	stocks.forEach((stock, i) => {
+		let x = cx + (i-1)*stock_shift;
+		stock.forEach(({num, val, a, b}, j) => {
+			let block_sx = block_min_sx + block_delta_x*val;
+			let x0 = x - block_sx/2;
+			let y = sy - (j+1)*block_sy;
+			let grd = ctx.createLinearGradient(x0, 0, x0 + block_sx, 0);
+			grd.addColorStop(0, a);
+			grd.addColorStop(1, b);
+			ctx.fillStyle = grd;
+			ctx.beginPath();
+			ctx.rect(x0, y, block_sx, block_sy);
+			ctx.fill();
+			ctx.stroke();
+		});
+	});
+
+	ctx.textBaseline = 'top';
+	ctx.textAlign = 'left';
+	ctx.font = txt_size + 'px monospace';
+	let best = Math.pow(2, level) - 1;
+	let txt = counter.toString();
+	ctx.fillStyle = '#ccc';
+	ctx.fillText(counter, txt_margin_x, txt_margin_y);
+	ctx.fillStyle = '#222';
+	let size = ctx.measureText(txt).width;
+	ctx.fillText('/'+best, txt_margin_x + size, txt_margin_y);
+
+	if (currentPos != null && currentPos != startPos) {
+		ctx.strokeStyle = 'rgba(0, 192, 255, 0.7)';
+		ctx.lineWidth = arrow_width;
+		let y = sy - stock_sy/2;
+		ctx.beginPath();
+		let ax = (startPos - 1)*stock_shift + cx;
+		let bx = (currentPos - 1)*stock_shift + cx;
+		let delta = bx - ax;
+		let dir = delta/Math.abs(delta);
+		ax += dir*stock_sx*2;
+		bx -= dir*stock_sx*2;
+		ctx.moveTo(ax, y);
+		ctx.lineTo(bx, y);
+		let h = arrow_width*3;
+		ctx.moveTo(bx - dir*h, y - h);
+		ctx.lineTo(bx, y);
+		ctx.lineTo(bx - dir*h, y + h);
+		ctx.stroke();
+	}
+
+};
+
+window.onresize = resize;
+canvas.onmousedown = e => handleMousedown(e.offsetX, e.offsetY);
+canvas.onmousemove = e => handleMousemove(e.offsetX, e.offsetY);
+canvas.onmouseup = e => handleMouseup(e.offsetX, e.offsetY);
+canvas.addEventListener('touchstart', e => {
+	e = e.touches[0];
+	handleMousedown(e.pageX, e.pageY);
+});
+canvas.addEventListener('touchmove', e => {
+	e = e.touches[0];
+	handleMousemove(e.pageX, e.pageY);
+});
+canvas.addEventListener('touchend', e => {
+	e = e.changedTouches[0];
+	handleMouseup(e.pageX, e.pageY);
+});
+
+const handleMousedown = (x, y) => {
+	startPos = nearest(x);
+};
+const handleMousemove = (x, y) => {
+	if (startPos != null) {
+		currentPos = nearest(x);
+		render();
+	}
+};
+const handleMouseup = (x, y) => {
+	if (currentPos != null && currentPos != startPos) {
+		move(startPos, currentPos);
+	}
+	startPos = null;
+	currentPos = null;
+	render();
+};
+const move = (a, b) => {
+	a = stocks[a];
+	b = stocks[b];
+	if (!a.length) return false;
+	if (b.length) {
+		let la = a[a.length-1];
+		let lb = b[b.length-1];
+		if (la.val > lb.val) return false;
+	}
+	let block = a.splice(a.length-1, 1)[0];
+	b.push(block);
+	++ counter;
+	if (t0 == null) {
+		t0 = new Date();
+	}
+	return true;
+};
+
+resetLevel();
+resize();
+
+</script>

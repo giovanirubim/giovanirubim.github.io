@@ -1,0 +1,306 @@
+<html>
+	<head>
+		<title>Subtitle Fixer</title>
+		<meta charset="utf-8">
+		<style type="text/css">
+			body {
+				font-size: 0px;
+				font-family: monospace;
+			}
+			.instant {
+				margin-left: 10px;
+				margin-top: 15px;
+				display: inline-block;
+				width: 230px;
+				font-size: 12px;
+				font-weight: bold;
+				color: #555;
+			}
+			.instant input {
+				width: 230px;
+				padding-left: 5px;
+				height: 30px;
+				border: 1px solid #aaa;
+				border-radius: 3px;
+				font-family: monospace;
+			}
+		</style>
+	</head>
+	<body>
+		<input type="file" id="file">
+		<div class="inputs">
+			<div class="input">
+				<div class="instant">
+					<div class="title">Moment the subtitle shows up</div>
+					<input type="text" placeholder="hh:mm:ss.sss" value="01:02:03,004">
+				</div>
+				<div class="instant">
+					<div class="title">Moment the subtitle should show up</div>
+					<input type="text" placeholder="hh:mm:ss.sss" value="01:01:01,111">
+				</div>
+			</div>
+			<div class="input">
+				<div class="instant">
+					<div class="title">Moment the subtitle shows up</div>
+					<input type="text" placeholder="hh:mm:ss.sss" value="03:04:05,678">
+				</div>
+				<div class="instant">
+					<div class="title">Moment the subtitle should show up</div>
+					<input type="text" placeholder="hh:mm:ss.sss" value="04:00:00,000">
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+<script type="text/javascript">
+
+	let isUtf8;
+
+	{
+		const nameToInt = {};
+		const intToName = {};
+		const map = {};
+		'stable,1 more,2 more,3 more'.split(',').forEach((name, i) => {
+			++ i;
+			nameToInt[name] = i;
+			intToName[i] = name;
+			map[i] = {};
+		});
+		const add = (from, byte, to) => {
+			map[nameToInt[from]][byte] = nameToInt[to];
+		};
+		for (let i=0; i<256; ++i) {
+			if (i < 128) {
+				add('stable', i, 'stable');
+			}
+			if ((i & 0b11100000) === 0b11000000) {
+				add('stable', i, '1 more');
+			}
+			if ((i & 0b11110000) === 0b11100000) {
+				add('stable', i, '2 more');
+			}
+			if ((i & 0b11111000) === 0b11110000) {
+				add('stable', i, '3 more');
+			}
+			if ((i & 0b11000000) === 0b10000000) {
+				add('3 more', i, '2 more');
+				add('2 more', i, '1 more');
+				add('1 more', i, 'stable');
+			}
+		}
+		isUtf8 = array => {
+			let state = nameToInt['stable'];
+			for (let i=0; i<array.length && state; ++i) {
+				state = map[state][array[i]];
+			}
+			return state === nameToInt['stable'];
+		};
+	}
+
+	const utf8ToString = array => {
+		const n = array.length;
+		let res = '';
+		for (let i=0; i<n; ++i) {
+			const byte = array[i];
+			if (byte < 128) {
+				res += String.fromCharCode(byte);
+			} else if (byte < 0b11100000) {
+				let val = byte & 0b00011111;
+				val = (val << 6) | array[++i] & 0b00111111;
+				res += String.fromCharCode(val);
+			} else if (byte < 0b11110000) {
+				let val = byte & 0b00001111;
+				val = (val << 6) | array[++i] & 0b00111111;
+				val = (val << 6) | array[++i] & 0b00111111;
+				res += String.fromCharCode(val);
+			} else {
+				let val = byte & 0b00001111;
+				val = (val << 6) | array[++i] & 0b00111111;
+				val = (val << 6) | array[++i] & 0b00111111;
+				val = (val << 6) | array[++i] & 0b00111111;
+				res += String.fromCharCode(val);
+			}
+		}
+		return res;
+	};
+
+	let w1252;
+	{
+		const wCharSet = [
+			128, 130, 131, 132, 133, 134, 135, 136,
+			137, 138, 139, 140, 142, 145, 146, 147,
+			148, 149, 150, 151, 152, 153, 154, 155,
+			156, 158, 159, 160, 161, 162, 163, 164,
+			165, 166, 167, 168, 169, 170, 171, 172,
+			173, 174, 175, 176, 177, 178, 179, 180,
+			181, 182, 183, 184, 185, 186, 187, 188,
+			189, 190, 191, 192, 193, 194, 195, 196,
+			197, 198, 199, 200, 201, 202, 203, 204,
+			205, 206, 207, 208, 209, 210, 211, 212,
+			213, 214, 215, 216, 217, 218, 219, 220,
+			221, 222, 223, 224, 225, 226, 227, 228,
+			229, 230, 231, 232, 233, 234, 235, 236,
+			237, 238, 239, 240, 241, 242, 243, 244,
+			245, 246, 247, 248, 249, 250, 251, 252,
+			253, 254, 255
+		];
+		const unicode = [
+			8364, 8218,  402, 8222, 8230, 8224, 8225,  710,
+			8240,  352, 8249,  338,  381, 8216, 8217, 8220,
+			8221, 8226, 8211, 8212,  732, 8482,  353, 8250,
+			 339,  382,  376,  160,  161,  162,  163,  164,
+			 165,  166,  167,  168,  169,  170,  171,  172,
+			 173,  174,  175,  176,  177,  178,  179,  180,
+			 181,  182,  183,  184,  185,  186,  187,  188,
+			 189,  190,  191,  192,  193,  194,  195,  196,
+			 197,  198,  199,  200,  201,  202,  203,  204,
+			 205,  206,  207,  208,  209,  210,  211,  212,
+			 213,  214,  215,  216,  217,  218,  219,  220,
+			 221,  222,  223,  224,  225,  226,  227,  228,
+			 229,  230,  231,  232,  233,  234,  235,  236,
+			 237,  238,  239,  240,  241,  242,  243,  244,
+			 245,  246,  247,  248,  249,  250,  251,  252,
+			 253,  254,  255
+		];
+		const w1252ToChar = {};
+		const charToW1252 = {};
+		wCharSet.forEach((val, i) => {
+			const chr = String.fromCharCode(unicode[i]);
+			w1252ToChar[val] = chr;
+			charToW1252[chr] = val;
+		});
+		for (let i=1; i<128; ++i) {
+			const chr = String.fromCharCode(i);
+			w1252ToChar[i] = chr;
+			charToW1252[chr] = i;
+		}
+		w1252 = {
+			encode: str => {
+				const array = new Uint8Array(str.length);
+				for (let i=0; i<str.length; ++i) {
+					buffer[i] = charToW1252[str[i]] | 0;
+				}
+				return buffer;
+			},
+			decode: buffer => {
+				let str = '';
+				for (let i=0; i<buffer.length; ++i) {
+					str += w1252ToChar[buffer[i]];
+				}
+				return str;
+			}
+		};
+	}
+
+	const enterMap2 = {
+		'\r': '',
+		'\n': '\n'
+	};
+	const enterMap1 = {
+		'\r': '',
+		'\n': '\r\n'
+	};
+
+	const zm = {
+		'-2': '',
+		'-1': '',
+		'0':  '',
+		'1':  '0',
+		'2':  '00',
+		'3':  '000',
+		'4':  '000',
+	};
+
+	const parseTime = str => {
+		const [h, m, s] = str.trim().split(':');
+		return h*(36e5) + m*(6e4) + s.replace(',', '.')*1e3;
+	};
+
+	const dumpTime = x => {
+		x = Math.max(0, Math.round(x));
+		let ms = x % 1e3;
+		x = Math.round((x - ms)/1e3);
+		let s = x % 60;
+		x = Math.round((x - s)/60);
+		let m = x % 60;
+		let h = Math.round((x - m)/60);
+		return `${h>9?h:'0'+h}:${m>9?m:'0'+m}:${s>9?s:'0'+s},${ms>99?ms:'0'+(ms>9?ms:'0'+ms)}`;
+	};
+
+	const subs = [];
+
+	const setSrc = src => {
+		subs.length = 0;
+		const lines = src.split('\n');
+		const buffer = [];
+		const flush = () => {
+			if (buffer.length > 2) {
+				let [a, b] = buffer[1].split('-->');
+				a = parseTime(a);
+				b = parseTime(b);
+				subs.push({ a, b, lines: buffer.slice(2) });
+			}
+			buffer.length = 0;
+		};
+		for (let i=0; i<lines.length; ++i) {
+			const line = lines[i].trim();
+			if (line === '') {
+				flush();
+			} else {
+				buffer.push(line);
+			}
+		}
+		flush();
+	};
+
+	const adjust = () => {
+		const inputs = document.querySelectorAll('input[type="text"]');
+		const array = new Array(4);
+		for (let i=0; i<inputs.length; i++) {
+			array[i] = parseTime(inputs[i].value);
+		}
+		const [a, b, c, d] = array;
+		m = (d - b)/(c - a);
+		s = b - a*m;
+		subs.forEach(sub => {
+			let {a, b} = sub;
+			a = a*m + s;
+			b = b*m + s;
+			sub.a = a;
+			sub.b = b;
+		});
+	};
+
+	const getOutput = () => {
+		let str = '';
+		subs.forEach((sub, i) => {
+			str += (i + 1) + '\n';
+			str += dumpTime(sub.a) + ' --> ' + dumpTime(sub.b) + '\n';
+			str += sub.lines.join('\n') + '\n\n';
+		});
+	};
+
+	const inputFile = document.querySelector('#file');
+	file.onchange = () => {
+		const [file] = inputFile.files;
+		if (!file) {
+			return;
+		}
+		const reader = new FileReader();
+		reader.onloadend = () => {
+			const buffer = reader.result;
+			const array = new Uint8Array(buffer);
+			let src;
+			if (isUtf8(array)) {
+				src = utf8ToString(array);
+			} else {
+				src = w1252.decode(array);
+			}
+			setSrc(src);
+			adjust();
+			getOutput();
+		};
+		reader.readAsArrayBuffer(file);
+	};
+
+</script>
