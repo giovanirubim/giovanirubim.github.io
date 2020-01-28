@@ -7,13 +7,22 @@
 			margin: 0px;
 			font-size: 0px;
 		}
+		div {
+			position: fixed;
+			top: 0px;
+			right: : 0px;
+		}
 	</style>
 </head>
 	<body>
 		<canvas></canvas>
+		<div><img src="reset.png"></div>
 	</body>
 </html>
 <script type='text/javascript'>
+
+let resetDiv = document.querySelector('div');
+let resetImg = document.querySelector('img');
 
 let sx;
 let sy;
@@ -37,6 +46,8 @@ let arrow_width;
 let t0, t1;
 let time = '';
 let animation = null;
+let f1_len = 1/4;
+let f2_len = 3/4;
 
 let endAnimation = () => {
 	clearInterval(animation.code);
@@ -56,8 +67,18 @@ let runAnimation = () => {
 			endAnimation();
 			return;
 		}
-		fase = Math.floor(t*3);
-		t = (t - fase/3)*3;
+		let prev = t;
+		if (t <= f1_len) {
+			fase = 0;
+			t /= f1_len;
+		} else if (t <= f2_len) {
+			fase = 1;
+			t = (t - f1_len) / (f2_len - f1_len);
+		} else {
+			fase = 2;
+			t = (t - f2_len) / (1 - f2_len);
+		}
+		console.log(prev + ' => ' + Math.floor(t*1000)/1000);
 		t = (1 - Math.cos(t*Math.PI))/2;
 		animation.fase = fase;
 		animation.t = t;
@@ -138,7 +159,7 @@ const render = () => {
 	ctx.fillStyle = '#000';
 	ctx.fillRect(0, 0, sx, sy);
 	ctx.lineWidth = stock_sx;
-	ctx.lineCap = 'round';
+	ctx.lineCap = 'square';
 	for (let i=-1; i<=1; ++i) {
 		let x = cx + i*stock_shift;
 		let x0 = x - stock_sx/2;
@@ -221,6 +242,12 @@ const render = () => {
 	let size = ctx.measureText(txt).width;
 	ctx.fillText('/'+best, txt_margin_x + size, txt_margin_y);
 
+	resetImg.style.width = txt_size;
+	resetImg.style.height = txt_size;
+	resetDiv.style.top = txt_margin_y;
+	resetDiv.style.right = txt_margin_x;
+
+	ctx.lineCap = 'round';
 	if (currentPos != null && currentPos != startPos) {
 		ctx.strokeStyle = 'rgba(0, 192, 255, 0.7)';
 		ctx.lineWidth = arrow_width;
@@ -318,6 +345,12 @@ const move = (a, b) => {
 	};
 	runAnimation();
 	return true;
+};
+
+resetImg.onclick = () => {
+	won = false;
+	resetLevel();
+	render();
 };
 
 resetLevel();
