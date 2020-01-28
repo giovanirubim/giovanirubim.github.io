@@ -29,12 +29,41 @@ let block_sy;
 let txt_margin_x;
 let txt_margin_y;
 let txt_size;
+let air_y;
 let level = 1;
 let counter = 0;
 let stocks;
 let arrow_width;
 let t0, t1;
 let time = '';
+let animation = null;
+
+let endAnimation = () => {
+	clearInterval(animation.code);
+	let {block, b} = animation;
+	stocks[b].push(block);
+	animation = null;
+	render();
+};
+
+let runAnimation = () => {
+	let {start} = animation;
+	animation.code = setInterval(() => {
+		let now = new Date();
+		let t = (now - start)/500;
+		let fase;
+		if (t >= 1) {
+			endAnimation();
+			return;
+		}
+		fase = Math.floor(t*3);
+		t = (t - fase/3)*3;
+		t = (1 - Math.cos(t*Math.PI))/2;
+		animation.fase = fase;
+		animation.t = t;
+		render();
+	}, 0);
+};
 
 const resetLevel = () => {
 	stocks = [[], [], []];
@@ -75,6 +104,12 @@ const nearest = x => {
 
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
+
+const resetValues = () => {
+	block_sy = Math.min(stock_sy*0.8/level, stock_sx*1.5);
+	air_y = sy - stock_sy - stock_sx/2 - block_sy*2;
+};
+
 const resize = () => {
 	let x = window.innerWidth;
 	let y = window.innerHeight;
@@ -89,10 +124,10 @@ const resize = () => {
 	block_max_sx = stock_shift*0.9;
 	block_min_sx = stock_sx*2.5;
 	block_delta_x = block_max_sx - block_min_sx;
-	block_sy = Math.min(stock_sy*0.8/level, stock_sx*1.5);
 	txt_margin_x = txt_margin_y = stock_sx;
 	txt_size = stock_sx*2;
 	arrow_width = stock_sx*0.5;
+	resetValues();
 	render();
 };
 
@@ -140,6 +175,40 @@ const render = () => {
 			ctx.stroke();
 		});
 	});
+
+	if (animation) {
+		let {a, b, fase, t, start, block} = animation;
+		let xa = cx + stock_shift*(a - 1);
+		let xb = cx + stock_shift*(b - 1);
+		let ya = sy - (stocks[a].length + 1)*block_sy;
+		let yb = sy - (stocks[b].length + 1)*block_sy;
+		let x, y;
+		switch (fase) {
+			case 0: {
+				x = xa;
+				y = ya*(1-t) + air_y*t;
+			} break;
+			case 1: {
+				x = (1-t)*xa + t*xb;
+				y = air_y;
+			} break;
+			case 2: {
+				x = xb;
+				y = yb;
+				y = yb*t + air_y*(1-t);
+			} break;
+		}
+		let block_sx = block_min_sx + block_delta_x*block.val;
+		let x0 = x - block_sx/2;
+		let grd = ctx.createLinearGradient(x0, 0, x0 + block_sx, 0);
+		grd.addColorStop(0, block.a);
+		grd.addColorStop(1, block.b);
+		ctx.fillStyle = grd;
+		ctx.beginPath();
+		ctx.rect(x0, y, block_sx, block_sy);
+		ctx.fill();
+		ctx.stroke();
+	}
 
 	ctx.textBaseline = 'top';
 	ctx.textAlign = 'left';
@@ -211,9 +280,13 @@ const handleMouseup = (x, y) => {
 
 let won = false;
 const move = (a, b) => {
+	if (animation) {
+		endAnimation();
+	}
 	if (won) {
 		if (counter == Math.pow(2, level) - 1) {
 			++level;
+			resetValues();
 		}
 		counter = 0;
 		resetLevel();
@@ -234,6 +307,16 @@ const move = (a, b) => {
 	if (!stocks[0].length && !stocks[1].length) {
 		won = true;
 	}
+	b.splice(b.length-1, 1)[0];
+	animation = {
+		a: stocks.indexOf(a),
+		b: stocks.indexOf(b),
+		block,
+		fase: 0,
+		t: 0,
+		start: new Date()
+	};
+	runAnimation();
 	return true;
 };
 
