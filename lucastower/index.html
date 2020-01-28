@@ -141,6 +141,7 @@ const resize = () => {
 	stock_sx = sx*0.03;
 	stock_sy = sy*0.6;
 	stock_shift = sx/4;
+	stock_sy = Math.min(stock_sy, stock_shift*1.5)
 	stock_y0 = sy - stock_sy;
 	block_max_sx = stock_shift*0.9;
 	block_min_sx = stock_sx*2.5;
