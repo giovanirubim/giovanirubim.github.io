@@ -10,8 +10,6 @@
 		}
 		div {
 			position: fixed;
-			top: 0px;
-			right: : 0px;
 		}
 	</style>
 </head>
@@ -245,7 +243,7 @@ const render = () => {
 	let txt = counter.toString();
 	ctx.fillStyle = '#ccc';
 	ctx.fillText(counter, txt_margin_x, txt_margin_y);
-	ctx.fillStyle = '#222';
+	ctx.fillStyle = '#444';
 	let size = ctx.measureText(txt).width;
 	ctx.fillText('/'+best, txt_margin_x + size, txt_margin_y);
 
