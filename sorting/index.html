@@ -1,0 +1,299 @@
+<html>
+	<head>
+		<title></title>
+		<style type="text/css">
+			body {
+				margin: 0px;
+				font-size: 0px;
+				background-color: #000;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas></canvas>
+	</body>
+</html>
+<script type="text/javascript">
+
+const canvas = document.querySelector('canvas');
+const ctx = canvas.getContext('2d');
+let screen_sx = null;
+let screen_sy = null;
+let cellSize;
+
+let ini_x = null;
+let ini_y = null;
+let margin = null;
+let duration = 1000;
+
+let counters = { array: [], map: {} };
+let animation = null;
+const smooth = x => (1 - Math.cos(x*Math.PI))/2;
+const cycle = x => (1 - Math.cos(x*2*Math.PI))/2;
+const addCallback = (callback) => animation.callbacks.push(callback);
+const addStep = (step) => {
+	if (animation) {
+		animation.steps.push(step);
+		return;
+	}
+	let code = null;
+	const callbacks = [];
+	const steps = [step];
+	const finish = () => {
+		if (code === null) return;
+		clearInterval(code);
+		code = null;
+		animation = null;
+		steps.forEach(step => step(1));
+		callbacks.forEach(callback => callback());
+	};
+	const t0 = new Date();
+	const it = () => {
+		const t1 = new Date();
+		let x = Math.min(1, (t1 - t0)/duration);
+		if (x === 1) return finish();
+		steps.forEach(step => step(x));
+		render();
+	};
+	code = setInterval(it, 0);
+	animation = {finish, steps, callbacks};
+};
+
+let currAlg = null;
+const algMap = {
+	selection: {
+		name: 'Selection sort',
+		init: () => {
+			let i = new Counter(array.length - 1, 'i', '#07f');
+			let j = new Counter(0, 'j', '#f70');
+			counters = { array: [i, j], map: {i, j} };
+			currAlg.state = 'compare';
+		},
+		next: () => {
+			let {state} = currAlg;
+			let ci = counters.map.i;
+			let cj = counters.map.j;
+			if (state === 'compare') {
+				if (compare(cj.index, ci.index) > 0) {
+					state = 'swap';
+				} else {
+					state = 'inc';
+				}
+			} else if (state === 'swap') {
+				swap(cj.index, ci.index);
+				state = 'inc';
+			} else if (state === 'inc') {
+				let j = cj.index;
+				let i = ci.index;
+				if (j + 1 >= i) {
+					if (i - 1 <= 0) {
+						setColors(array, [0, 1, 0.4, 1], cycle);
+						state = 'sorted';
+					} else {
+						setIndex(cj, 0);
+						setIndex(ci, i - 1);
+						state = 'compare';
+					}
+				} else {
+					setIndex(cj, j + 1);
+					state = 'compare';
+				}
+			}
+			currAlg.state = state;
+		}
+	}
+};
+
+const defColor = [0.4, 0.4, 0.3, 1];
+
+class Cell {
+	constructor(value) {
+		this.value = value;
+		this.rgba = defColor.slice();
+		this.color = null;
+		this.updateColor();
+	}
+	updateColor() {
+		let [r, g, b, a] = this.rgba;
+		r = Math.round(r*255);
+		g = Math.round(g*255);
+		b = Math.round(b*255);
+		this.color = `rgba(${r}, ${g}, ${b}, ${a})`;
+		return this;
+	}
+}
+
+class Counter {
+	constructor(index, name, color) {
+		this.index = index;
+		this.name = name;
+		this.color = color;
+		this.alpha = 1;
+	}
+	draw() {
+		const {index, color, name} = this;
+		const x = index*(margin + cellSize) + ini_x + cellSize*0.5;
+		const y = ini_y - cellSize*0.2;
+		ctx.fillStyle = color;
+		ctx.fillText(name, x, y);
+	}
+}
+
+const setColors = (array, target, method) => {
+	const tempColors = new Array(array.length);
+	const {length} = array;
+	for (let i=length; i--;) {
+		tempColors[i] = array[i].rgba.slice();
+	}
+	addStep(x => {
+		x = method(x);
+		let inv = 1 - x;
+		for (let i=length; i--;) {
+			const cell = array[i];
+			const rgba = tempColors[i];
+			for (let i=4; i--;) {
+				cell.rgba[i] = target[i]*x + inv*rgba[i];
+			}
+			cell.updateColor();
+		}
+	});
+};
+const swap = (a, b) => {
+	let exchanged = false;
+	a = array[a];
+	b = array[b];
+	const arr = [a, b];
+	setColors(arr, [0.8, 0.2, 0.1, 1], cycle);
+	addStep(x => {
+		if (x >= 0.5 && !exchanged) {
+			let aux = a.value;
+			a.value = b.value;
+			b.value = aux;
+			exchanged = true;
+		}
+	});
+};
+
+const setIndex = (counter, newIndex) => {
+	const prev = counter.index;
+	addStep(x => {
+		x = smooth(x);
+		const inv = 1 - x;
+		counter.index = prev*inv + newIndex*x;
+	});
+};
+
+const compare = (a, b) => {
+	a = array[a];
+	b = array[b];
+	if (a.value === b.value) {
+		setColors([a, b], [0.2, 0.2, 0.2, 1], cycle);
+		return 0;
+	}
+	if (a.value > b.value) {
+		setColors([a], [0.1, 0.9, 0.5, 1], cycle);
+		setColors([b], [0.2, 0.2, 0.3, 1], cycle);
+		return 1;
+	}
+	setColors([a], [0.2, 0.2, 0.3, 1], cycle);
+	setColors([b], [0.1, 0.9, 0.5, 1], cycle);
+	return -1;
+};
+
+const array = [];
+
+const run = algorithm => {
+	currAlg = { algorithm };
+	algorithm.init();
+	render();
+};
+
+const setSize = n => {
+	array.length = n;
+	for (let i=0; i<n; ++i) {
+		array[i] = new Cell(i + 1);
+	}
+};
+
+const hideCounters = array => {
+	const {length} = array;
+	addStep(x => {
+		x = smooth(x);
+		for (let i=array; i--;) array[i].alpha = 1 - x;
+	});
+};
+const shuffle = () => {
+	for (let i=array.length; i;) {
+		let j = Math.floor(Math.random()*i);
+		-- i;
+		let aux = array[i];
+		array[i] = array[j];
+		array[j] = aux;
+	}
+};
+
+setSize(10);
+shuffle();
+
+const updateValues = () => {
+	let full_sx = screen_sx*0.8;
+	cellSize = Math.floor(full_sx*0.9/array.length);
+	margin = Math.floor((full_sx - cellSize*array.length)/(array.length - 1));
+	ini_x = 100;
+	ini_y = 100;
+	full_sx = array.length * (cellSize + margin) - margin;
+	ini_x = Math.floor((screen_sx - full_sx) / 2);
+	ini_y = Math.floor((screen_sy - cellSize) / 2);
+};
+
+const handleResize = () => {
+	let sx = window.innerWidth;
+	let sy = window.innerHeight;
+	if (sx === screen_sx && sy === screen_sy) {
+		return false;
+	}
+	screen_sx = sx;
+	screen_sy = sy;
+	canvas.width = sx;
+	canvas.height = sy;
+	updateValues();
+	render();
+};
+
+const drawCell = (cell, index) => {
+	ctx.fillStyle = cell.color;
+	let x = ini_x + index * (margin + cellSize);
+	let y = ini_y;
+	ctx.fillRect(x, y, cellSize, cellSize);
+	ctx.fillStyle = '#000';
+	ctx.fillText(cell.value, x + cellSize*0.5, y + cellSize*0.5);
+};
+
+const render = () => {
+	ctx.clearRect(0, 0, screen_sx, screen_sy);
+	ctx.font = 'bold ' + cellSize*0.6 + 'px monospace';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	array.forEach(drawCell);
+	ctx.textBaseline = 'bottom';
+	counters.array.forEach(counter => counter.draw());
+};
+
+window.onresize = handleResize;
+handleResize();
+run(algMap.selection);
+
+window.onkeydown = e => {
+	let key = e.key.toLowerCase().replace('arrow', '');
+	if (key === 'right') {
+		if (animation) animation.finish();
+		currAlg.algorithm.next();
+	}
+};
+
+canvas.onclick = () => {
+	if (animation) animation.finish();
+	currAlg.algorithm.next();
+};
+
+</script>
