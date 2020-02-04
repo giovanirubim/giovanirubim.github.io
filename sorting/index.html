@@ -25,20 +25,24 @@ let cellSize;
 let ini_x = null;
 let ini_y = null;
 let margin = null;
-let duration = 1000;
+let title_y = null;
+let duration = 750;
 
+const buttons = { array: [], map: {} };
+const addButton = (name, button) => {
+	buttons.array.push(button);
+	buttons.map[name] = button;
+};
 let counters = { array: [], map: {} };
 let animation = null;
 const smooth = x => (1 - Math.cos(x*Math.PI))/2;
 const cycle = x => (1 - Math.cos(x*2*Math.PI))/2;
-const addCallback = (callback) => animation.callbacks.push(callback);
 const addStep = (step) => {
 	if (animation) {
 		animation.steps.push(step);
 		return;
 	}
 	let code = null;
-	const callbacks = [];
 	const steps = [step];
 	const finish = () => {
 		if (code === null) return;
@@ -46,7 +50,7 @@ const addStep = (step) => {
 		code = null;
 		animation = null;
 		steps.forEach(step => step(1));
-		callbacks.forEach(callback => callback());
+		render();
 	};
 	const t0 = new Date();
 	const it = () => {
@@ -57,10 +61,13 @@ const addStep = (step) => {
 		render();
 	};
 	code = setInterval(it, 0);
-	animation = {finish, steps, callbacks};
+	animation = {finish, steps};
 };
 
 let currAlg = null;
+const setState = state => {
+	currAlg.state = state;
+};
 const algMap = {
 	selection: {
 		name: 'Selection sort',
@@ -76,33 +83,243 @@ const algMap = {
 			let cj = counters.map.j;
 			if (state === 'compare') {
 				if (compare(cj.index, ci.index) > 0) {
-					state = 'swap';
+					setState('swap');
 				} else {
-					state = 'inc';
+					setState('inc');
 				}
 			} else if (state === 'swap') {
 				swap(cj.index, ci.index);
-				state = 'inc';
+				setState('inc');
 			} else if (state === 'inc') {
 				let j = cj.index;
 				let i = ci.index;
 				if (j + 1 >= i) {
 					if (i - 1 <= 0) {
 						setColors(array, [0, 1, 0.4, 1], cycle);
-						state = 'sorted';
+						setState('sorted');
 					} else {
 						setIndex(cj, 0);
 						setIndex(ci, i - 1);
-						state = 'compare';
+						setState('compare');
 					}
 				} else {
 					setIndex(cj, j + 1);
-					state = 'compare';
+					setState('compare');
 				}
 			}
-			currAlg.state = state;
 		}
-	}
+	},
+	insertion: {
+		name: 'Insertion sort',
+		init: () => {
+			let i = new Counter(1, 'i', '#07f', false);
+			let j = new Counter(1, 'j', '#f70');
+			counters = { array: [i, j], map: {i, j} };
+			currAlg.state = 'compare';
+		},
+		next: () => {
+			const {state} = currAlg;
+			let ci = counters.map.i;
+			let cj = counters.map.j;
+			let i = ci.index;
+			let j = cj.index;
+			if (state === 'compare') {
+				if (compare(j, j-1) < 0) {
+					setState('swap');
+				} else {
+					setState('inci');
+				}
+			} else if (state === 'swap') {
+				swap(j, j-1);
+				setState('decj');
+			} else if (state === 'decj') {
+				if (j-1 > 0) {
+					setIndex(cj, j-1);
+					setState('compare');
+				} else {
+					if (i + 1 < array.length) {
+						setIndex(ci, i + 1);
+						setIndex(cj, i + 1);
+						setState('compare');
+					} else {
+						setColors(array, [0, 1, 0.4, 1], cycle);
+						setState('sorted');
+					}
+				}
+			} else if (state === 'inci') {
+				if (i + 1 < array.length) {
+					setIndex(ci, i + 1);
+					setIndex(cj, i + 1);
+					setState('compare');
+				} else {
+					setColors(array, [0, 1, 0.4, 1], cycle);
+					setState('sorted');
+				}
+			}
+		}
+	},
+	bubble: {
+		name: 'Bubble sort',
+		init: () => {
+			let i = new Counter(array.length - 1, 'i', '#07f');
+			let j = new Counter(0, 'j', '#f70');
+			counters = { array: [i, j], map: {i, j} };
+			currAlg.state = 'compare';
+		},
+		next: () => {
+			const {state} = currAlg;
+			const ci = counters.map.i;
+			const cj = counters.map.j;
+			let i = ci.index;
+			let j = cj.index;
+			if (state === 'compare') {
+				if (compare(j, j+1) > 0) {
+					setState('swap');
+				} else {
+					setState('inc');
+				}
+			} else if (state === 'swap') {
+				swap(j, j + 1);
+				setState('inc');
+			} else if (state === 'inc') {
+				if (j + 1 < i) {
+					setIndex(cj, j + 1);
+					setState('compare');
+				} else if (i > 1) {
+					setIndex(ci, i - 1);
+					setIndex(cj, 0);
+					setState('compare');
+				} else {
+					setColors(array, [0, 1, 0.4, 1], cycle);
+					setState('sorted');
+				}
+			}
+		}
+	},
+	// heap: {
+	// 	name: 'Heap sort',
+	// 	init: () => {
+	// 		let h = new Counter(0, 'h', '#0F7', false);
+	// 		let i = new Counter(0, 'i', '#07f');
+	// 		counters = { array: [h, i], map: {h, i} };
+	// 		currAlg.state = 'push';
+	// 	},
+	// 	next: () => {
+	// 		const {state} = currAlg;
+	// 		const ch = counters.map.h;
+	// 		const ci = counters.map.i;
+	// 		const h = ch.index;
+	// 		const i = ci.index;
+	// 		const j = (i-1)>>1;
+	// 		const a = i*2 + 1;
+	// 		const b = a + 1;
+	// 		if (state === 'push') {
+	// 			setIndex(ch, h + 1);
+	// 			setIndex(ci, h + 1);
+	// 			setState('up');
+	// 		} else if (state === 'up') {
+	// 			if (compare(i, j) > 0) {
+	// 				setState('swap:up');
+	// 			} else {
+	// 				if (h + 1 < array.length) {
+	// 					setState('push');
+	// 				} else {
+	// 					setState('pop:0');
+	// 				}
+	// 			}
+	// 		} else if (state === 'swap:up') {
+	// 			swap(i, j);
+	// 			if (j) {
+	// 				setState('move:i:up');
+	// 			} else {
+	// 				if (h + 1 < array.length) {
+	// 					setState('push');
+	// 				} else {
+	// 					setState('pop:0');
+	// 				}
+	// 			}
+	// 		} else if (state === 'move:i:up') {
+	// 			setIndex(ci, j);
+	// 			setState('up');
+	// 		} else if (state === 'pop:0') {
+	// 			swap(0, h);
+	// 			setState('pop:1');
+	// 		} else if (state === 'pop:1') {
+	// 			setIndex(ch, h - 1);
+	// 			setIndex(ci, 0);
+	// 			setState('down');
+	// 		} else if (state === 'down') {
+	// 			if (a > h) {
+	// 				setColors(array.slice(i, i+1), [0.1, 0.1, 0.1, 1], cycle);
+	// 				if (h > 0) {
+	// 					setState('pop:0');
+	// 				} else {
+	// 					setState('sorted');
+	// 				}
+	// 			} else {
+	// 				const arr = [array[a]];
+	// 				if (b <= h) arr.push(array[b]);
+	// 				setColors(arr, [1, 0.5, 0, 1], cycle);
+	// 				if (arr.length === 2) {
+	// 					setState('chooseChild');
+	// 				} else if (arr.length === 1) {
+	// 					setState('check:a');
+	// 				}
+	// 			}
+	// 		} else if (state === 'chooseChild') {
+	// 			if (compare(a, b) >= 0) {
+	// 				setState('check:a');
+	// 			} else {
+	// 				setState('check:b');
+	// 			}
+	// 		} else if (state === 'check:a') {
+	// 			if (compare(a, i) > 0) {
+	// 				setState('down:a');
+	// 			} else if (h > 1) {
+	// 				setState('pop:0');
+	// 			} else {
+	// 				setState('sorted');
+	// 			}
+	// 		} else if(state === 'check:b') {
+	// 			if (compare(b, i) > 0) {
+	// 				setState('down:b');
+	// 			} else if (h > 1) {
+	// 				setState('pop:0');
+	// 			}
+	// 		} else if (state === 'down:a') {
+	// 			swap(i, a);
+	// 			setState('rep:a');
+	// 		} else if (state === 'down:b') {
+	// 			swap(i, b);
+	// 			setState('rep:b');
+	// 		} else if (state === 'rep:a') {
+	// 			setIndex(ci, a);
+	// 			setState('down');
+	// 		} else if (state === 'rep:b') {
+	// 			setIndex(ci, b);
+	// 			setState('down');
+	// 		}
+	// 	}
+	// }
+};
+
+const drawButton = (x, y, size, dir) => {
+	const deltaY = size*0.25;
+	const deltaX = size*0.17;
+	const y1 = y + deltaY;
+	const y2 = y + size*0.5;
+	const y3 = y2*2 - y1;
+	const x1 = x + size*0.5 - deltaX*dir;
+	const x2 = x + size*0.5 + deltaX*dir;
+	const x3 = x1;
+	ctx.lineWidth = 1;
+	ctx.strokeStyle = '#fff'
+	ctx.beginPath();
+	ctx.rect(x, y, size, size);
+	ctx.moveTo(x1, y1);
+	ctx.lineTo(x2, y2);
+	ctx.lineTo(x3, y3);
+	ctx.stroke();
 };
 
 const defColor = [0.4, 0.4, 0.3, 1];
@@ -124,20 +341,45 @@ class Cell {
 	}
 }
 
+class Button {
+	constructor(id, dir) {
+		this.x = null;
+		this.y = null;
+		this.size = null;
+		this.dir = dir;
+	}
+	draw() {
+		const {x, y, size, dir} = this;
+		drawButton(x, y, size, dir);
+	}
+	contains(tx, ty) {
+		const {x, y, size} = this;
+		if (tx < x || ty < y) return false;
+		if (tx > x + size || ty > y + size) return false;
+		return true;
+	}
+}
+
 class Counter {
-	constructor(index, name, color) {
+	constructor(index, name, color, up) {
 		this.index = index;
 		this.name = name;
 		this.color = color;
+		this.up = up == null? true: up;
 		this.alpha = 1;
 	}
 	draw() {
-		const {index, color, name} = this;
+		const {index, color, name, up, alpha} = this;
+		ctx.textBaseline = up? 'bottom': 'top';
+		const deltaY = cellSize*0.2;
 		const x = index*(margin + cellSize) + ini_x + cellSize*0.5;
-		const y = ini_y - cellSize*0.2;
+		const y = up? ini_y - deltaY: ini_y + cellSize + deltaY;
+		ctx.globalAlpha = alpha;
 		ctx.fillStyle = color;
 		ctx.fillText(name, x, y);
+		ctx.globalAlpha = 1;
 	}
+
 }
 
 const setColors = (array, target, method) => {
@@ -164,7 +406,7 @@ const swap = (a, b) => {
 	a = array[a];
 	b = array[b];
 	const arr = [a, b];
-	setColors(arr, [0.8, 0.2, 0.1, 1], cycle);
+	setColors(arr, [0.6, 0.1, 0.0, 1], cycle);
 	addStep(x => {
 		if (x >= 0.5 && !exchanged) {
 			let aux = a.value;
@@ -187,16 +429,12 @@ const setIndex = (counter, newIndex) => {
 const compare = (a, b) => {
 	a = array[a];
 	b = array[b];
-	if (a.value === b.value) {
-		setColors([a, b], [0.2, 0.2, 0.2, 1], cycle);
-		return 0;
-	}
 	if (a.value > b.value) {
 		setColors([a], [0.1, 0.9, 0.5, 1], cycle);
-		setColors([b], [0.2, 0.2, 0.3, 1], cycle);
+		setColors([b], [0.25, 0.25, 0.3, 1], cycle);
 		return 1;
 	}
-	setColors([a], [0.2, 0.2, 0.3, 1], cycle);
+	setColors([a], [0.25, 0.25, 0.3, 1], cycle);
 	setColors([b], [0.1, 0.9, 0.5, 1], cycle);
 	return -1;
 };
@@ -206,7 +444,6 @@ const array = [];
 const run = algorithm => {
 	currAlg = { algorithm };
 	algorithm.init();
-	render();
 };
 
 const setSize = n => {
@@ -233,7 +470,7 @@ const shuffle = () => {
 	}
 };
 
-setSize(10);
+setSize(12);
 shuffle();
 
 const updateValues = () => {
@@ -281,8 +518,8 @@ const render = () => {
 };
 
 window.onresize = handleResize;
+run(algMap.insertion);
 handleResize();
-run(algMap.selection);
 
 window.onkeydown = e => {
 	let key = e.key.toLowerCase().replace('arrow', '');
