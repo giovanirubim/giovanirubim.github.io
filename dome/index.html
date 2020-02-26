@@ -1,0 +1,454 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<style type="text/css">
+			body {
+				background-color: #ddd;
+				margin: 0px;
+				text-align: center;
+			}
+			.main {
+				display: inline-block;
+				background-color: #fff;
+				margin: 100px 0px;
+				text-align: left;
+			}
+			.canvas {
+				margin: 10px;
+			}
+			.panel > .input {
+				display: inline-block;
+				margin-top: 10px;
+				margin-left: 10px;
+				height: 36px;
+			}
+			.panel > .input > .title {
+				font-family: monospace;
+			}
+			.panel > .input input {
+				font-family: monospace;
+				width: 120px;
+				padding-left: 5px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="main">
+			<div class="panel">
+				<div class="input">
+					<div class="title">Número de gomos</div>
+					<div class="content">
+						<input type="text" id="n1" value="10">
+					</div>
+				</div>
+				<div class="input">
+					<div class="title">Número de dobras</div>
+					<div class="content">
+						<input type="text" id="n2" value="3">
+					</div>
+				</div>
+				<div class="input">
+					<div class="title">Altura (cm)</div>
+					<div class="content">
+						<input type="text" id="h" value="20">
+					</div>
+				</div>
+			</div>
+			<div class="canvas">
+				<canvas width="800" height="600"></canvas>
+			</div>
+		</div>
+	</body>
+</html>
+<script type="text/javascript">
+
+	const PI = Math.PI;
+	const TAU = PI*2;
+	const TORAD = PI/180;
+
+	const mulMatMat = (m1, m2, r) => {
+		const r0 = m1[0x0]*m2[0x0] + m1[0x1]*m2[0x4] + m1[0x2]*m2[0x8] + m1[0x3]*m2[0xc];
+		const r1 = m1[0x0]*m2[0x1] + m1[0x1]*m2[0x5] + m1[0x2]*m2[0x9] + m1[0x3]*m2[0xd];
+		const r2 = m1[0x0]*m2[0x2] + m1[0x1]*m2[0x6] + m1[0x2]*m2[0xa] + m1[0x3]*m2[0xe];
+		const r3 = m1[0x0]*m2[0x3] + m1[0x1]*m2[0x7] + m1[0x2]*m2[0xb] + m1[0x3]*m2[0xf];
+		const r4 = m1[0x4]*m2[0x0] + m1[0x5]*m2[0x4] + m1[0x6]*m2[0x8] + m1[0x7]*m2[0xc];
+		const r5 = m1[0x4]*m2[0x1] + m1[0x5]*m2[0x5] + m1[0x6]*m2[0x9] + m1[0x7]*m2[0xd];
+		const r6 = m1[0x4]*m2[0x2] + m1[0x5]*m2[0x6] + m1[0x6]*m2[0xa] + m1[0x7]*m2[0xe];
+		const r7 = m1[0x4]*m2[0x3] + m1[0x5]*m2[0x7] + m1[0x6]*m2[0xb] + m1[0x7]*m2[0xf];
+		const r8 = m1[0x8]*m2[0x0] + m1[0x9]*m2[0x4] + m1[0xa]*m2[0x8] + m1[0xb]*m2[0xc];
+		const r9 = m1[0x8]*m2[0x1] + m1[0x9]*m2[0x5] + m1[0xa]*m2[0x9] + m1[0xb]*m2[0xd];
+		const ra = m1[0x8]*m2[0x2] + m1[0x9]*m2[0x6] + m1[0xa]*m2[0xa] + m1[0xb]*m2[0xe];
+		const rb = m1[0x8]*m2[0x3] + m1[0x9]*m2[0x7] + m1[0xa]*m2[0xb] + m1[0xb]*m2[0xf];
+		const rc = m1[0xc]*m2[0x0] + m1[0xd]*m2[0x4] + m1[0xe]*m2[0x8] + m1[0xf]*m2[0xc];
+		const rd = m1[0xc]*m2[0x1] + m1[0xd]*m2[0x5] + m1[0xe]*m2[0x9] + m1[0xf]*m2[0xd];
+		const re = m1[0xc]*m2[0x2] + m1[0xd]*m2[0x6] + m1[0xe]*m2[0xa] + m1[0xf]*m2[0xe];
+		r[0xf] = m1[0xc]*m2[0x3] + m1[0xd]*m2[0x7] + m1[0xe]*m2[0xb] + m1[0xf]*m2[0xf];
+		r[0xe] = re;
+		r[0xd] = rd;
+		r[0xc] = rc;
+		r[0xb] = rb;
+		r[0xa] = ra;
+		r[0x9] = r9;
+		r[0x8] = r8;
+		r[0x7] = r7;
+		r[0x6] = r6;
+		r[0x5] = r5;
+		r[0x4] = r4;
+		r[0x3] = r3;
+		r[0x2] = r2;
+		r[0x1] = r1;
+		r[0x0] = r0;
+	};
+
+	const mulMatVec = (m, v, r) => {
+		const r0 = m[0x0]*v[0] + m[0x1]*v[1] + m[0x2]*v[2] + m[0x3]*v[3];
+		const r1 = m[0x4]*v[0] + m[0x5]*v[1] + m[0x6]*v[2] + m[0x7]*v[3];
+		const r2 = m[0x8]*v[0] + m[0x9]*v[1] + m[0xa]*v[2] + m[0xb]*v[3];
+		r[3] = m[0xc]*v[0] + m[0xd]*v[1] + m[0xe]*v[2] + m[0xf]*v[3];
+		r[2] = r2;
+		r[1] = r1;
+		r[0] = r0;
+	};
+
+	let rotationX = 60*TORAD;
+	let rotationZ = 0;
+	let scale = 330;
+	let mouse_x = null;
+	let mouse_y = null;
+
+	const projection = new Float32Array(16);
+	const updateProjection = () => {
+		const cosx = Math.cos(rotationX);
+		const sinx = Math.sin(rotationX);
+		const cosz = Math.cos(rotationZ);
+		const sinz = Math.sin(rotationZ);
+		for (let i=16; i--;) projection[i] = 0;
+		projection[0x0] = scale;
+		projection[0x5] = scale;
+		projection[0xa] = scale;
+		projection[0xf] = 1;
+		let rz = [
+			cosz, -sinz, 0, 0,
+			sinz, cosz, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		];
+		let rx = [
+			1, 0, 0, 0,
+			0, cosx, sinx, 0,
+			0, -sinx, cosx, 0,
+			0, 0, 0, 1
+		];
+		mulMatMat(rz, projection, projection);
+		mulMatMat(rx, projection, projection);
+	};
+
+	const canvas = document.querySelector('canvas');
+	const ctx = canvas.getContext('2d');
+	const sx = canvas.width;
+	const sy = canvas.height;
+
+	const vertices = [];
+	const lines = [];
+	const nodes = [];
+	const edges = [];
+	const addVertex = (x, y, z) => {
+		const vertex = new Float32Array([x, y, 0, 0]);
+		vertex.src = new Float32Array([x, y, z, 1]);
+		vertices.push(vertex);
+	};
+	const addNode = (x, y) => {
+		const node = [x, y];
+		nodes.push(node);
+		return node;
+	};
+	const nearestNode = (x, y, minDist) => {
+		let rNode = null;
+		let rDist = null;
+		nodes.forEach(node => {
+			const dx = x - node[0];
+			const dy = y - node[1];
+			const dist = Math.sqrt(dx*dx + dy*dy);
+			if (dist > minDist) return;
+			if (rDist === null || dist < rDist) {
+				rDist = dist;
+				rNode = node;
+			}
+		});
+		return rNode;
+	};
+
+	const wid = sx*0.9;
+	let updatePreview = true;
+	let updateModel = true;
+	let n1, n2, h;
+	let hAngle, vAngle;
+	let mv, mh;
+	let fullHeight;
+	let cmToPx, PxToCm;
+	let mode3D = false;
+	const calcOpening = angle => {
+		const dx = 1 - Math.cos(angle);
+		const dy = Math.sin(angle);
+		return Math.sqrt(dx*dx + dy*dy);
+	};
+	const readInputs = () => {
+		const read = id => parseInt	(document.querySelector('#'+id).value);
+		let new_n1 = Math.max(read('n1'), 3);
+		let new_n2 = Math.max(read('n2'), 0);
+		let new_h = read('h');
+		if (new_n1 !== n1 || new_n2 !== n2) {
+			updatePreview = true;
+			updateModel = true;
+		} else if (h === new_h) return false;
+		n1 = new_n1;
+		n2 = new_n2;
+		h = new_h;
+		hAngle = TAU/n1;
+		vAngle = PI/2/(n2+1);
+		mv = calcOpening(vAngle);
+		mh = calcOpening(hAngle);
+		fullHeight = mv*h*(n2+1);
+		cmToPx = wid/fullHeight;
+		PxToCm = fullHeight/wid;
+		return true;
+	};
+
+	const buildPreview = () => {
+		lines.length = 0;
+		vertices.length = 0;
+		const addCircle = (z, rad) => {
+			let base = vertices.length;
+			for (let i=0; i<n1; ++i) {
+				const angle = hAngle*i;
+				const x = Math.cos(angle)*rad;
+				const y = Math.sin(angle)*rad;
+				addVertex(x, y, z);
+			}
+			for (let i=0; i<n1; ++i) {
+				const a = vertices[base + i];
+				const b = vertices[base + (i+1)%n1];
+				lines.push({a, b});
+			}
+		};
+		const bridgeLastTwo = () => {
+			const u = vertices.length - n1;
+			const d = u - n1;
+			for (let i=0; i<n1; ++i) {
+				const a = vertices[u + i];
+				const b = vertices[d + i];
+				lines.push({a, b});
+			}
+		};
+		const closeLast = z => {
+			const base = vertices.length - n1;
+			addVertex(0, 0, z);
+			const b = vertices[vertices.length - 1];
+			for (let i=0; i<n1; ++i) {
+				const a = vertices[base + i];
+				lines.push({a, b});
+			}
+		};
+		for (let i=0; i<n2+1; ++i) {
+			const angle = i*vAngle;
+			addCircle(Math.sin(angle), Math.cos(angle));
+			if (i) bridgeLastTwo();
+		}
+		closeLast(1);
+		updatePreview = false;
+	};
+
+	const renderPreview = () => {
+		ctx.clearRect(0, 0, sx, sy);
+		ctx.setTransform(1, 0, 0, -1, sx*0.5, sy*0.65);
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+		ctx.beginPath();
+		lines.forEach(line => {
+			const [ax, ay] = line.a;
+			const [bx, by] = line.b;
+			ctx.moveTo(ax, ay);
+			ctx.lineTo(bx, by);
+		});
+		ctx.stroke();
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+	};
+
+	const project = () => {
+		vertices.forEach(vertex => mulMatVec(projection, vertex.src, vertex));
+	};
+
+	const buildModel = () => {
+		nodeA = null;
+		nodeB = null;
+		nodes.length = 0;
+		edges.length = 0;
+		const x0 = (sx - wid)/2;
+		const x1 = (sx + wid)/2;
+		const my = sy/2;
+		const step_x = wid/(n2+1);
+		let la, lb;
+		for (let i=0; i<=n2; ++i) {
+			const angle = i*vAngle;
+			const x = x0 + i*step_x;
+			const deltaY = mh*Math.cos(angle)*h*cmToPx/2;
+			const a = addNode(x, my - deltaY);
+			const m = addNode(x, my);
+			const b = addNode(x, my + deltaY);
+			edges.push({a, b});
+			if (i) {
+				edges.push({a, b: la});
+				edges.push({a: b, b: lb});
+			}
+			la = a;
+			lb = b;
+		}
+		let l = addNode(x1, my);
+		edges.push({a: la, b: l});
+		edges.push({a: lb, b: l});
+		updateModel = false;
+	};
+
+	const drawRuler = (ax, ay, bx, by) => {
+		const space = 15;
+		const size = 25;
+		ctx.strokeStyle = '#07f';
+		ctx.fillStyle = '#07f';
+		let v0x = bx - ax;
+		let v0y = by - ay;
+		const length = Math.sqrt(v0x*v0x + v0y*v0y);
+		v0x /= length;
+		v0y /= length;
+		let v1x = -v0y;
+		let v1y = v0x;
+		let p0x = ax + v1x*space;
+		let p0y = ay + v1y*space;
+		let p1x = ax + v1x*(space + size);
+		let p1y = ay + v1y*(space + size);
+		let p2x = bx + v1x*space;
+		let p2y = by + v1y*space;
+		let p3x = bx + v1x*(space + size);
+		let p3y = by + v1y*(space + size);
+		let pm0x = (p0x + p1x)/2;
+		let pm0y = (p0y + p1y)/2;
+		let pm1x = (p2x + p3x)/2;
+		let pm1y = (p2y + p3y)/2;
+		let mx = (ax + bx)/2 + (space + size)*v1x;
+		let my = (ay + by)/2 + (space + size)*v1x;
+		ctx.beginPath();
+		ctx.moveTo(p0x, p0y);
+		ctx.lineTo(p1x, p1y);
+		ctx.moveTo(p2x, p2y);
+		ctx.lineTo(p3x, p3y);
+		ctx.moveTo(pm0x, pm0y);
+		ctx.lineTo(pm1x, pm1y);
+		ctx.stroke();
+		ctx.font = '12px monospace';
+		let cm = Math.round(length*PxToCm*20)/20;
+		ctx.fillText(cm + 'cm', mx, my);
+	};
+
+	const draw2d = () => {
+		ctx.clearRect(0, 0, sx, sy);
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+		ctx.beginPath();
+		edges.forEach(edge => {
+			const [ax, ay] = edge.a;
+			const [bx, by] = edge.b;
+			ctx.moveTo(ax, ay);
+			ctx.lineTo(bx, by);
+		});
+		ctx.stroke();
+		nodes.forEach(node => {
+			let rad = 2;
+			ctx.fillStyle = '#000';
+			if (node === nodeA || node === nodeB) {
+				ctx.fillStyle = '#07f';
+				rad = 4;
+			}
+			const [x, y] = node;
+			ctx.beginPath();
+			ctx.arc(x, y, rad, 0, TAU);
+			ctx.fill();
+		});
+		if (nodeA && (nodeB || mouse_x !== null)) {
+			let [ax, ay] = nodeA;
+			let bx, by;
+			if (nodeB) {
+				[bx, by] = nodeB;
+			} else {
+				bx = mouse_x;
+				by = mouse_y;
+			}
+			drawRuler(ax, ay, bx, by);
+		}
+	};
+
+	setInterval(() => {
+		readInputs();
+		if (mode3D) {
+			if (updatePreview) buildPreview();
+			const div = 30000;
+			rotationZ = (new Date()%div)/div*TAU;
+			updateProjection();
+			project();
+			renderPreview();
+		} else {
+			readInputs();
+			if (updateModel) buildModel();
+			draw2d();
+		}
+	}, 0);
+
+	let nodeA = null;
+	let nodeB = null;
+
+	canvas.onmousedown = e => {
+		if (e.button !== 0) return;
+		const x = e.offsetX;
+		const y = e.offsetY;
+		nodeA = nearestNode(x, y, 15);
+		nodeB = null;
+	};
+
+	canvas.onmousemove = e => {
+		if (!nodeA || !(e.buttons & 1)) {
+			mouse_x = null;
+			mouse_y = null;
+			return;
+		}
+		let x = mouse_x = e.offsetX;
+		let y = mouse_y = e.offsetY;
+		nodeB = nearestNode(x, y, 15);
+	};
+
+	window.onkeydown = e => {
+		const key = e.key.toLowerCase().replace('arrow', '');
+		if (key === 'enter' || key === '\n') {
+			mode3D = !mode3D;
+			if (!mode3D) {
+				if (updateModel) buildModel();
+				draw2d();
+			}
+		}
+	};
+
+	[...document.querySelectorAll('input[type="text"]')].forEach(input => {
+		input.addEventListener('keydown', e => {
+			const key = e.key.toLowerCase().replace('arrow', '');
+			if (key === 'up' || key === 'down') {
+				let value = input.value + '';
+				value = value.replace(',', '.');
+				value = parseFloat(value);
+				value += (key === 'up')*2 - 1;
+				value = value.toString().replace('.', ',');
+				input.value = value;
+				input.select();
+				e.preventDefault();
+			}
+		});
+	});
+
+</script>
