@@ -187,7 +187,7 @@
 	let mv, mh;
 	let fullHeight;
 	let cmToPx, PxToCm;
-	let mode3D = false;
+	let mode3D = true;
 	const calcOpening = angle => {
 		const dx = 1 - Math.cos(angle);
 		const dy = Math.sin(angle);
@@ -315,13 +315,15 @@
 		const size = 25;
 		ctx.strokeStyle = '#07f';
 		ctx.fillStyle = '#07f';
+		ctx.textBaseline = 'middle';
+		ctx.textAlign = 'center';
 		let v0x = bx - ax;
 		let v0y = by - ay;
 		const length = Math.sqrt(v0x*v0x + v0y*v0y);
 		v0x /= length;
 		v0y /= length;
-		let v1x = -v0y;
-		let v1y = v0x;
+		let v1x = v0y;
+		let v1y = -v0x;
 		let p0x = ax + v1x*space;
 		let p0y = ay + v1y*space;
 		let p1x = ax + v1x*(space + size);
@@ -334,8 +336,8 @@
 		let pm0y = (p0y + p1y)/2;
 		let pm1x = (p2x + p3x)/2;
 		let pm1y = (p2y + p3y)/2;
-		let mx = (ax + bx)/2 + (space + size)*v1x;
-		let my = (ay + by)/2 + (space + size)*v1x;
+		let mx = (pm0x + pm1x)/2 + v1x*space;
+		let my = (pm0y + pm1y)/2 + v1y*space;
 		ctx.beginPath();
 		ctx.moveTo(p0x, p0y);
 		ctx.lineTo(p1x, p1y);
