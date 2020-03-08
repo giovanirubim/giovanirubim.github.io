@@ -35,12 +35,60 @@
 		<div class="main">
 			<div class="topic" id="angle_of_view">
 				<h2>Angle of View</h2>
-				<p>First of all it must be clear how cameras and eyes form images. They both have an area that detects visible light, but this alone isn't enough to form images since to every point in this area light can be comming from all sorts of directions. So the main idea is to use a pinhole, if all light in an area must have gone through a pinhole then for each point there's just one direction from which light must be comming from. That's why it's said that our eyes form images upside down, because light reaching the upper cells of the retina is comming from below the eye, and light reaching the lower cells are comming from above as ilustrated below.</p>
+				<p>First of all it must be clear how cameras and eyes form images. They both have an area that detects visible light, but this alone isn't enough to form images since to every point in this area light can be comming from all sorts of directions. So the main idea is to use a pinhole, if all light in an area must have gone through a pinhole then for each point there's just one direction from which light must be comming from. That's why its said that our eyes form images upside down, because light reaching the upper cells of the retina is comming from below the eye, and light reaching the lower cells are comming from above as ilustrated below.</p>
 				<div class="center-image"><img src="img/image-flip.png"></div>
 				<p>The highest point in the detecting area determines the lower limit of the view, and the lowest point determines the highest. The angle between the pinhole and the two lines is the vertical angle of view, as shown in the following ilustration.</p>
 				<div class="center-image"><img src="img/angle-of-view.png"></div>
 				<p>The spacial region between those limits is the visual field.</p>
+				<div class="center-image"><canvas height="360" width="760"></canvas></div>
 			</div>
 		</div>
 	</body>
 </html>
+<script type="text/javascript">
+	const ballRadius = 10;
+	const ballDistance = 50;
+	const lineWidth = 1;
+	const sx = 760;
+	const sy = 360;
+	const fillCircle = (ctx, x, y, rad, color) => {
+		ctx.fillStyle = color;
+		ctx.beginPath();
+		ctx.arc(x, y, rad, 0, Math.PI*2);
+		ctx.fill();
+	};
+	const drawSide = (ctx, rotation, distance, angle) => {
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.beginPath();
+		ctx.clearRect(0, 0, sx, sy);
+		ctx.setTransform(1, 0, 0, -1, sx/2, sy/2);
+		const cx = -distance/2;
+		const cy = 0;
+		const cos = Math.cos(rotation);
+		const sin = Math.sin(rotation);
+		const ax = cx + cos*ballDistance;
+		const ay = cy + sin*ballDistance;
+		const bx = cx - cos*ballDistance;
+		const by = cy - sin*ballDistance;
+		fillCircle(ctx, ax, ay, ballRadius, '#07f');
+		fillCircle(ctx, bx, by, ballRadius, '#f70');
+		const camx = distance/2;
+		const camy = 0;
+		const view0x = camx	- distance*2;
+		const view0y = camy + Math.tan(angle/2)*distance*2;
+		const view1x = view0x;
+		const view1y = camy - (view0y - camy);
+		ctx.strokeStyle = '#000';
+		ctx.beginPath();
+		ctx.moveTo(view0x, view0y);
+		ctx.lineTo(camx, camy);
+		ctx.lineTo(view1x, view1y);
+		ctx.stroke();
+	};
+	const canvas = document.querySelector('canvas');
+	const ctx = canvas.getContext('2d');
+	setInterval(() => {
+		const rotation = ((new Date()%7500)/7500)*(Math.PI*2);
+		drawSide(ctx, rotation, 400, 45/180*Math.PI);
+	}, 0)
+</script>

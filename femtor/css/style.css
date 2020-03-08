@@ -1,0 +1,62 @@
+:root {
+	--leftbar-width: 230px;
+}
+body {
+	font-family: arial;
+	background-color: #000;
+	margin: 0px;
+}
+canvas {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+}
+#leftbar {
+	position: absolute;;
+	top: 0px;
+	left: 0px;
+	bottom: 0px;
+	width: var(--leftbar-width);
+	background-color: #ccc;
+}
+#leftbar > .content {
+	padding-top: 5px;
+	padding-left: 5px;
+}
+#leftbar .head {
+	height: 18px;
+}
+#leftbar .item {
+	background-color: rgba(0, 0, 0, 0.1);
+	cursor: default;
+	margin-bottom: 5px;
+	margin-right: 5px;
+}
+#leftbar .item .title {
+	display: inline-block;
+	font-size: 14px;
+}
+#leftbar .item .r-buttons {
+	float: right;
+	margin-bottom: -10px;
+}
+#leftbar .item .l-buttons {
+	display: inline-block;
+	margin-left: 5px;
+}
+#leftbar .item .button {
+	display: inline-block;
+	height: 18px;
+	width: 18px;
+	font-size: 14px;
+	cursor: pointer;
+	text-align: center;
+}
+
+#view3d {
+	position: absolute;
+	top: 0px;
+	left: var(--leftbar-width);
+	right: 0px;
+	bottom: 0px;
+}
