@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<style type="text/css">
+			body {
+				background-color: #ccc;
+				margin: 0px;
+			}
+			.main {
+				width: 800px;
+				margin: 0px auto;
+				font-family: arial;
+				font-size: 14px;
+			}
+			.center-image {
+				margin: 20px 0px;
+				text-align: center;
+				background-color: #eee;
+			}
+			.center-image img {
+				min-height: 300px;
+			}
+			.topic {
+				background-color: #fff;
+				padding: 5px 20px;
+				margin-top: 20px;
+				color: #444;
+				box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="main">
+			<div class="topic" id="angle_of_view">
+				<h2>Angle of View</h2>
+				<p>First of all it must be clear how cameras and eyes form images. They both have an area that detects visible light, but this alone isn't enough to form images since to every point in this area light can be comming from all sorts of directions. So the main idea is to use a pinhole, if all light in an area must have gone through a pinhole then for each point there's just one direction from which light must be comming from. That's why it's said that our eyes form images upside down, because light reaching the upper cells of the retina is comming from below the eye, and light reaching the lower cells are comming from above as ilustrated below.</p>
+				<div class="center-image"><img src="img/image-flip.png"></div>
+				<p>The highest point in the detecting area determines the lower limit of the view, and the lowest point determines the highest. The angle between the pinhole and the two lines is the vertical angle of view, as shown in the following ilustration.</p>
+				<div class="center-image"><img src="img/angle-of-view.png"></div>
+				<p>The spacial region between those limits is the visual field.</p>
+			</div>
+		</div>
+	</body>
+</html>
