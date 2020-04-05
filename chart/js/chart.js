@@ -65,47 +65,41 @@ const scinot = value => {
 
 class Plotter {
 
-	constructor(config = {}) {
-
-		// Creates attribute with default value
-		const addAttr = (name, def) => {
-			const val = config[name];
-			this[name] = val === undefined? def: val;
-		};
+	constructor(config = {}) {	
 
 		// Creates the attributes with default values
-		addAttr('width', 600);
-		addAttr('height', 450);
-		addAttr('paddingT', 46.5);
-		addAttr('paddingL', 75.5);
-		addAttr('paddingB', 50.5);
-		addAttr('paddingR', 46.5);
-		addAttr('lineWidth', 3);
-		addAttr('baseAxis', 'x');
-		addAttr('x0', null);
-		addAttr('x1', null);
-		addAttr('y0', null);
-		addAttr('y1', null);
-		addAttr('xAxisFontSize', 16);
-		addAttr('xAxisLabel', '<x axis>');
-		addAttr('xAxisMargin', 5);
-		addAttr('xValuesFontSize', 12);
-		addAttr('xValuesMargin', 10);
-		addAttr('yAxisFontSize', 16);
-		addAttr('yAxisLabel', '<y axis>');
-		addAttr('yAxisMargin', 10);
-		addAttr('yValuesFontSize', 12);
-		addAttr('yValuesMargin', 10);
-		addAttr('background', '#111');
-		addAttr('color', '#fff');
-		addAttr('mouseRadius', 15);
-		addAttr('spotRadius', 5);
-		addAttr('targetSize', 20);
-		addAttr('targetMargin', 12);
-		addAttr('targetBorderRadius', 4);
-		addAttr('axisLineWidth', 1);
-		addAttr('xMinDistance', 100);
-		addAttr('yMinDistance', 50);
+		this.width = config.width ?? 600;
+		this.height = config.height ?? 450;
+		this.paddingT = config.paddingT ?? 46.5;
+		this.paddingL = config.paddingL ?? 75.5;
+		this.paddingB = config.paddingB ?? 50.5;
+		this.paddingR = config.paddingR ?? 46.5;
+		this.lineWidth = config.lineWidth ?? 3;
+		this.baseAxis = config.baseAxis ?? 'x';
+		this.xAxisFontSize = config.xAxisFontSize ?? 16;
+		this.xAxisLabel = config.xAxisLabel ?? '<x axis>';
+		this.xAxisMargin = config.xAxisMargin ?? 5;
+		this.xValuesFontSize = config.xValuesFontSize ?? 12;
+		this.xValuesMargin = config.xValuesMargin ?? 10;
+		this.yAxisFontSize = config.yAxisFontSize ?? 16;
+		this.yAxisLabel = config.yAxisLabel ?? '<y axis>';
+		this.yAxisMargin = config.yAxisMargin ?? 10;
+		this.yValuesFontSize = config.yValuesFontSize ?? 12;
+		this.yValuesMargin = config.yValuesMargin ?? 10;
+		this.background = config.background ?? '#111';
+		this.color = config.color ?? '#fff';
+		this.mouseRadius = config.mouseRadius ?? 15;
+		this.spotRadius = config.spotRadius ?? 5;
+		this.targetSize = config.targetSize ?? 20;
+		this.targetMargin = config.targetMargin ?? 12;
+		this.targetBorderRadius = config.targetBorderRadius ?? 4;
+		this.axisLineWidth = config.axisLineWidth ?? 1;
+		this.xMinDistance = config.xMinDistance ?? 100;
+		this.yMinDistance = config.yMinDistance ?? 50;
+		this.x0 = config.x0 ?? null;
+		this.x1 = config.x1 ?? null;
+		this.y0 = config.y0 ?? null;
+		this.y1 = config.y1 ?? null;
 
 		if (config.canvas) {
 			this.setCanvas(config.canvas);
@@ -189,7 +183,7 @@ class Plotter {
 			}
 			const x = pair.x[index];
 			const y = pair.y[index];
-			this.drawTarget(x, y, pair.color || this.color);
+			this.drawTarget(x, y, pair.color ?? this.color);
 		});
 		return this;
 	}
@@ -428,7 +422,7 @@ class Plotter {
 		ctx.lineCap = 'round';
 		ctx.lineJoin = 'round';
 		ctx.lineWidth = this.lineWidth;
-		ctx.strokeStyle = pair.color || this.color;
+		ctx.strokeStyle = pair.color ?? this.color;
 		ctx.beginPath();
 		for (let i=0; i<length; ++i) {
 			const x = array_x[i]*mul_x + sum_x;
