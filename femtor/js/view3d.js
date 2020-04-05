@@ -1,3 +1,9 @@
+// ========================<-------------------------------------------->======================== //
+// Controls the 3D view of the editor
+
+// ========================<-------------------------------------------->======================== //
+// Módulos acessados
+
 import Transform from './transform.js';
 
 // ========================<-------------------------------------------->======================== //
@@ -13,7 +19,8 @@ const TO_DEG = 180/PI;
 const nSides = 60; // Number of sides in a "circle"
 const step = TAU/nSides;
 const totalRadius = 10;
-const defaultStripeSize = totalRadius*0.0075;
+const axisLength = totalRadius*2.5;
+const defaultStripeSize = totalRadius*0.002;
 const initialDistance = 50;
 
 // ========================<-------------------------------------------->======================== //
@@ -21,6 +28,9 @@ const initialDistance = 50;
 
 const gl = canvas.getContext('webgl2', {antialias: true});
 const glPick = canvasColorPicker.getContext('webgl2', {antialias: false});
+
+// Flag que indica se a visualização 3D está atualizada na tela
+let viewUpdated = true;
 
 // 3D view width (sx) and height (sy)
 let sx = null;
@@ -35,11 +45,15 @@ let cameraUpdated = false;
 let cylinderMappingUpdated = false;
 
 const highlightColor = new Float32Array([0, .5, 1]);
-const bgColor = new Float32Array([.1, .1, .1]);
+const bgColor = new Float32Array([.05, .05, .05]);
 const colors = {
 	solidCylinder: {
-		color1: new Float32Array([.866, .866, .866]),
-		color2: new Float32Array([.4, .5, .6]),
+		cylinder: new Float32Array([.6, .6, .6]),
+		stripe: new Float32Array([.35, .35, .35]),
+	},
+	hilightedSolidCylinder: {
+		cylinder: new Float32Array([.4, .7, 1]),
+		stripe: new Float32Array([.6, .8, 1]),
 	}
 };
 
@@ -61,7 +75,7 @@ const camera = {
 	lightCoord: new Float32Array([0, 1, 1]),
 	
 	// mixes from (0) orthographic to (1) perspective
-	perspectiveLevel: 0,
+	perspectiveLevel: 1,
 
 	// Projection info
 	angle: 15*TO_RAD,
@@ -95,13 +109,25 @@ const geometries = {
 
 const cylinders = [];
 
+// Agendamento da renderização
+let render_request = null;
+
 // ========================<-------------------------------------------->======================== //
 // Model mapping
 
+// Total length of the model
 let totalLength = null;
+
+// Radius of the model
 let modelRadius = null;
+
+// Scaled applied to the model
 let modelScale = null;
 
+// Mapps a key to each cylinder
+let keyToCylinder = {};
+
+// Reset cylinder positions and scales acoording to the radius of the entire model
 const mapCylinders = () => {
 
 	// Finds the total length of the cylinders
@@ -296,14 +322,15 @@ class Geometry {
 }
 
 class Cylinder {
-	constructor(r0, r1, length) {
+	constructor(key, r0, r1, length) {
+		this.key = key !== undefined? key: null;
 		this.r0 = r0;
 		this.r1 = r1;
 		this.length = length;
 		this.rVals = new Float32Array(4);
 		this.zVals = new Float32Array(4);
 		this.pickColor = new Float32Array(3);
-		this.highlighted = 0;
+		this.highlighted = false;
 	}
 	set(z, scale, pickId) {
 		indexToColor(pickId, this.pickColor);
@@ -332,6 +359,7 @@ class Cylinder {
 // ========================<-------------------------------------------->======================== //
 // 3D internal methods
 
+// Recalcula as informações da câmera utilizadas na renderização
 const updateCamera = () => {
 
 	const {
@@ -400,6 +428,7 @@ const updateCamera = () => {
 	cameraUpdated = true;
 };
 
+// Renderiza os cilindros coloridos sem iluminação
 const renderCylinderColors = () => {
 	const prog = programs.colorCylinder;
 	glPick.useProgram(prog.ref);
@@ -415,30 +444,66 @@ const renderCylinderColors = () => {
 	});
 };
 
+// Renderiza os cilindros
 const renderCylinders = () => {
 	const prog = programs.solidCylinder;
 	gl.useProgram(prog.ref);
 	prog.setMat4('projection', camera.projection);
 	prog.setMat4('world', camera.world);
-	prog.setVec3('color1', colors.solidCylinder.color1);
-	prog.setVec3('color2', colors.solidCylinder.color2);
 	const geometry = geometries.solidCylinder;
+	let prevHighlight = null;
 	cylinders.forEach(cylinder => {
-		prog.setFloat('highlighted', cylinder.highlighted);
+		const {highlighted} = cylinder;
+		if (highlighted !== prevHighlight) {
+			if (highlighted) {
+				prog.setVec3('cylinder_color', colors.hilightedSolidCylinder.cylinder);
+				prog.setVec3('stripe_color', colors.hilightedSolidCylinder.stripe);
+			} else {
+				prog.setVec3('cylinder_color', colors.solidCylinder.cylinder);
+				prog.setVec3('stripe_color', colors.solidCylinder.stripe);
+			}
+			prevHighlight = highlighted;
+		}
 		prog.setVec4('rVals', cylinder.rVals);
 		prog.setVec4('zVals', cylinder.zVals);
 		geometry.draw();
 	});
 };
 
-const getAxisValue = (dir_x, dir_y, x, y) => {
-	if (dir_x === 0 && dir_y === 0) return null;
-	const mul = sy/Math.sqrt(dir_x*dir_x + dir_y*dir_y);
-	dir_x *= mul;
-	dir_y *= mul;
+const renderAxis = () => {
+	const prog = programs.line;
+	gl.useProgram(prog.ref);
+	prog.setMat4('projection', camera.projection);
+	prog.setMat4('world', camera.world);
+	geometries.xAxis.draw();
+	geometries.yAxis.draw();
+	geometries.zAxis.draw();
+};
+
+// Busca o ponto mais próximo entre o ponto [x,y] e a linha tangente ao vetor vec
+// Retorna um valor que multiplicado pelo vetor vec resulta neste ponto mais próximo, ou seja,
+// retorna o valor de [x,y] ao longo do vetor vec.
+const getAxisValue = (vec_x, vec_y, x, y) => {
+	if (vec_x === 0 && vec_y === 0) {
+		return null;
+	}
+	const mul = sy/Math.sqrt(vec_x*vec_x + vec_y*vec_y);
+	vec_x *= mul;
+	vec_y *= mul;
 	let dx = x - cx;
 	let dy = cy - y;
-	return valInLine(dir_x, dir_y, dx, dy);
+	return valInLine(vec_x, vec_y, dx, dy);
+};
+
+// Renderiza o modelo
+const render = () => {
+	if (viewUpdated === true) return;
+	if (!cylinderMappingUpdated) mapCylinders();
+	if (!cameraUpdated) updateCamera();
+	gl.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
+	renderCylinders();
+	renderAxis();
+	viewUpdated = true;
 };
 
 // ========================<-------------------------------------------->======================== //
@@ -446,6 +511,7 @@ const getAxisValue = (dir_x, dir_y, x, y) => {
 
 export const getCanvas = () => canvas;
 
+// Atualiza as dimensões do canvas
 export const resize = (width, height) => {
 	sx = width;
 	sy = height;
@@ -455,22 +521,75 @@ export const resize = (width, height) => {
 	canvas.height = sy;
 	gl.viewport(0, 0, sx, sy);
 	cameraUpdated = false;
+	viewUpdated = false;
 };
 
-export const render = () => {
-	if (!cylinderMappingUpdated) mapCylinders();
-	if (!cameraUpdated) updateCamera();
-	gl.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-	renderCylinders();
-};
-
-export const addCylinder = (innerRadius, outerRadius, length) => {
-	const cylinder = new Cylinder(innerRadius, outerRadius, length);
+// key: Identificação do cilindro
+export const addCylinder = (key, innerRadius, outerRadius, length) => {
+	if (key in keyToCylinder) {
+		throw 'Cylinder key colision';
+	}
+	const cylinder = new Cylinder(key, innerRadius, outerRadius, length);
 	cylinders.push(cylinder);
 	cylinderMappingUpdated = false;
+	keyToCylinder[key] = cylinder;
+	viewUpdated = false;
 	return cylinder;
 };
 
+// Remove um cilindro
+export const removeCylinder = (key) => {
+	const cylinder = keyToCylinder[key];
+	if (cylinder === undefined) {
+		throw 'Cylinder key not found';
+	}
+	const index = cylinders.indexOf(cylinder);
+	delete keyToCylinder[key];
+	cylinders.splice(index, 1);
+	cylinderMappingUpdated = false;
+	viewUpdated = false;
+};
+
+// Atualiza um cilindro
+// Campos nulos não serão alterados
+export const updateCylinder = (key, innerRadius, outerRadius, length) => {
+	const cylinder = keyToCylinder[key];
+	if (cylinder === undefined) {
+		throw 'Cylinder key not found';
+	}
+	if (innerRadius != null) {
+		cylinder.r0 = innerRadius;
+	}
+	if (outerRadius != null) {
+		cylinder.r1 = outerRadius;
+	}
+	if (length != null) {
+		cylinder.length = length;
+	}
+	cylinderMappingUpdated = false;
+	viewUpdated = false;
+};
+
+// Define o valor de destaque de um cilindro
+export const highlightCylinder = (key, value = true) => {
+	const cylinder = keyToCylinder[key];
+	if (cylinder === undefined) {
+		throw 'Cylinder key not found';
+	}
+	cylinder.highlighted = value;
+	viewUpdated = false;
+};
+
+// Exclui todos os cilindros
+export const clearCylinders = () => {
+	if (cylinders.length === 0) return;
+	cylinders.length = 0;
+	cylinderMappingUpdated = false;
+	keyToCylinder = {};
+	viewUpdated = false;
+};
+
+// Retorna a identificação do elemento que aparecem no canvas nas coordenadas x e y
 export const elementAt = (x, y) => {
 	const dx = (x - cx + 0.5)*2;
 	const dy = (cy - y - 0.5)*2;
@@ -488,9 +607,10 @@ export const elementAt = (x, y) => {
 	const [r, g, b] = pixel;
 	const index = colorToIndex(pixel);
 	if (index === -1) return null;
-	return cylinders[index];
+	return cylinders[index].key;
 };
 
+// Retorna o valor de deslocamento do modelo nas coordenadas x e y do canvas
 export const getShiftAt = (x, y) => {
 	let dir_x = camera.world[2];
 	let dir_y = camera.world[6];
@@ -498,6 +618,7 @@ export const getShiftAt = (x, y) => {
 	return res === null? null: res*(Math.tan(camera.angle)*camera.distance*2);
 };
 
+// Retorna o valor de rotação do modelo nas coordenadas x e y do canvas
 export const getRotationAt = (x, y) => {
 	let dir_x = camera.world[4];
 	let dir_y = - camera.world[0];
@@ -505,6 +626,7 @@ export const getRotationAt = (x, y) => {
 	return res === null? null: res*TAU;
 };
 
+// Retorna o valor de orientação da câmera nas coordenadas x e y do canvas
 export const getOrientationAt = (x, y) => {
 	let dx = x - cx;
 	let dy = cy - y;
@@ -516,37 +638,78 @@ export const getOrientationAt = (x, y) => {
 	return res;
 };
 
+// Retorna o valor atual de deslocamento do modelo
 export const getShift = () => camera.shift;
+
+// Retorna o valor atual de rotação do modelo
 export const getRotation = () => camera.rotation;
+
+// Retorna o valor atual da orientação da câmera
 export const getOrientation = () => camera.orientation;
+
+// Retorna a distância atual da câmera
 export const getDistance = () => camera.distance;
+
+// Retorna o nível atual de perspectiva da câmera
 export const getPerspective = () => camera.perspectiveLevel;
+
+// Retorna a distância inicial da câmera
 export const getInitialDistance = () => initialDistance;
 
+// Altera o valor de deslocamento do modelo
 export const setShift = shift => {
 	camera.shift = shift;
 	cameraUpdated = false;
+	viewUpdated = false;
 };
+// Altera o valor de rotação do modelo
 export const setRotation = rotation => {
 	camera.rotation = angularCut(rotation);
 	cameraUpdated = false;
+	viewUpdated = false;
 };
+// Altera o valor da orientação da câmera
 export const setOrientation = orientation => {
 	camera.orientation = angularCut(orientation);
 	cameraUpdated = false;
+	viewUpdated = false;
 };
+// Altera a distância da câmera
 export const setDistance = distance => {
 	camera.distance = distance;
 	cameraUpdated = false;
+	viewUpdated = false;
 };
+// Altera o nível de perspectiva da câmera
 export const setPerspective = val => {
 	camera.perspectiveLevel = val;
 	cameraUpdated = false;
+	viewUpdated = false;
 };
 
+// Calcula a escala que transforma uma medida em pixels para metros
 export const getScale = () => {
 	const height = Math.tan(camera.angle)*camera.distance*2;
 	return modelScale*sy/height;
+	viewUpdated = false;
+};
+
+// Inicia o loop de renderização
+export const start = () => {
+	if (render_request !== null) return;
+	const frame = () => {
+		render();
+		render_request = requestAnimationFrame(frame);
+	};
+	render_request = requestAnimationFrame(frame);
+};
+
+// Para o loop de renderização
+export const stop = () => {
+	if (render_request !== null) {
+		cancelAnimationFrame(render_request);
+		render_request = null;
+	}
 };
 
 // ========================<-------------------------------------------->======================== //
@@ -634,8 +797,27 @@ const buildClickCylinderGeometry = () => {
 	return new Geometry(glPick, attrArray, element, [2, 1, 1], GL.TRIANGLES);
 };
 
+const buildCenterLine = (dx, dy, dz, r, g, b) => {
+
+	const attrArray = [];
+	const element = [];
+
+	const vecLength = Math.sqrt(dx*dx + dy*dy + dz*dz);
+	const mul = axisLength*0.5/vecLength;
+	dx *= mul;
+	dy *= mul;
+	dz *= mul;
+
+	attrArray.push(-dx, -dy, -dz, r, g, b);
+	attrArray.push(+dx, +dy, +dz, r, g, b);
+	element.push(0, 1);
+
+	return new Geometry(gl, attrArray, element, [3, 3], GL.LINES);
+
+};
+
 // ========================<-------------------------------------------->======================== //
-// WebGL initialization
+// WebGL initialization (1)
 
 canvasColorPicker.width = 1;
 canvasColorPicker.height = 1;
@@ -649,6 +831,9 @@ glPick.viewport(0, 0, 1, 1);
 glPick.pixelStorei(GL.UNPACK_FLIP_Y_WEBGL, true);
 glPick.enable(GL.DEPTH_TEST);
 
+// ========================<-------------------------------------------->======================== //
+// WebGL initialization (2) - Shaders
+
 // Vertex shader for solid cylinders
 shaders.vertex.solidCylinder = createShader(gl, `
 	#version 300 es
@@ -660,8 +845,8 @@ shaders.vertex.solidCylinder = createShader(gl, `
 	layout (location = 3) in float cVal;
 	layout (location = 4) in vec3 normal;
 	
-	uniform vec3 color1;
-	uniform vec3 color2;
+	uniform vec3 cylinder_color;
+	uniform vec3 stripe_color;
 	uniform vec4 rVals;
 	uniform vec4 zVals;
 	uniform mat4 world;
@@ -677,61 +862,12 @@ shaders.vertex.solidCylinder = createShader(gl, `
 		float z = dot(zMask, zVals);
 		
 		vCoord = (world*vec4(vec3(coord*r, z), 1.0)).xyz;
-		vColor = mix(color1, color2, cVal);
+		vColor = mix(cylinder_color, stripe_color, cVal);
 		vNormal = mat3(world)*normal;
 		
 		gl_Position = projection*vec4(vCoord, 1.0);
 	}
 `, GL.VERTEX_SHADER);
-
-// Fragment shader for solid geometries
-shaders.fragment.solid = createShader(gl, `
-
-	#version 300 es
-	precision highp float;
-	
-	in vec3 vCoord;
-	in vec3 vColor;
-	in vec3 vNormal;
-
-	out vec4 FragColor;
-	uniform float highlighted;
-	
-	void main() {
-
-		vec3 highlightColor = ${toVec3String(highlightColor)};
-		float brightness = length(vColor);
-		vec3 midColor = mix(vec3(brightness), brightness*highlightColor, 0.75);
-		vec3 color = mix(vColor, midColor, highlighted);
-		vec3 lightCoord = vec3(50.0, 25.0, 100.0);
-		vec3 lightRay = lightCoord - vCoord;
-		vec3 lightDir = normalize(lightRay);
-		float angle = dot(lightDir, vNormal)*0.6 + 0.5;
-
-		FragColor = vec4(color*angle, 1.0);
-	}
-
-`, GL.FRAGMENT_SHADER);
-
-// Program for solid objects seen by the camera
-programs.solidCylinder = new Program(gl, shaders.vertex.solidCylinder, shaders.fragment.solid,
-	'projection', 'world', 'rVals', 'zVals', 'color1', 'color2', 'highlighted');
-
-geometries.solidCylinder = buildSolidCylinderGeometry();
-
-shaders.fragment.color = createShader(glPick, `
-
-	#version 300 es
-	precision highp float;
-	
-	out vec4 FragColor;
-	uniform vec3 color;
-	
-	void main() {
-		FragColor = vec4(color, 1.0);
-	}
-
-`, GL.FRAGMENT_SHADER);
 
 shaders.vertex.colorCylinder = createShader(glPick, `
 
@@ -758,10 +894,99 @@ shaders.vertex.colorCylinder = createShader(glPick, `
 
 `, GL.VERTEX_SHADER);
 
+shaders.vertex.line = createShader(gl, `
+
+	#version 300 es
+	precision highp float;
+	
+	layout (location = 0) in vec3 vCoord;
+	layout (location = 1) in vec3 vColor;
+
+	out vec3 color;
+	
+	uniform mat4 world;
+	uniform mat4 projection;
+	
+	void main() {
+		color = vColor;
+		gl_Position = projection*world*vec4(vCoord, 1.0);
+	}
+
+`, GL.VERTEX_SHADER);
+
+// Fragment shader for solid geometries
+shaders.fragment.solid = createShader(gl, `
+
+	#version 300 es
+	precision highp float;
+	
+	in vec3 vCoord;
+	in vec3 vColor;
+	in vec3 vNormal;
+
+	out vec4 FragColor;
+	
+	void main() {
+
+		float brightness = length(vColor);
+		vec3 lightCoord = vec3(50.0, 25.0, 100.0);
+		vec3 lightRay = lightCoord - vCoord;
+		vec3 lightDir = normalize(lightRay);
+		float angle = dot(lightDir, vNormal)*0.6 + 0.5;
+
+		FragColor = vec4(vColor*angle, 1.0);
+	}
+
+`, GL.FRAGMENT_SHADER);
+
+shaders.fragment.color = createShader(glPick, `
+
+	#version 300 es
+	precision highp float;
+	
+	out vec4 FragColor;
+	uniform vec3 color;
+	
+	void main() {
+		FragColor = vec4(color, 1.0);
+	}
+
+`, GL.FRAGMENT_SHADER);
+
+shaders.fragment.line = createShader(gl, `
+
+	#version 300 es
+	precision highp float;
+	
+	in vec3 color;
+	out vec4 FragColor;
+	
+	void main() {
+		FragColor = vec4(color, 1.0);
+	}
+
+`, GL.FRAGMENT_SHADER);
+
+// ========================<-------------------------------------------->======================== //
+// WebGL initialization (2) - Programs
+
+// Program for solid objects seen by the camera
+programs.solidCylinder = new Program(gl, shaders.vertex.solidCylinder, shaders.fragment.solid,
+	'projection', 'world', 'rVals', 'zVals', 'cylinder_color', 'stripe_color');
+
 programs.colorCylinder = new Program(glPick, shaders.vertex.colorCylinder, shaders.fragment.color,
 	'projection', 'world', 'rVals', 'zVals', 'color', 'pixelCapture');
 
+programs.line = new Program(gl, shaders.vertex.line, shaders.fragment.line, 'projection', 'world');
+
+// ========================<-------------------------------------------->======================== //
+// WebGL initialization (3) - Geometries
+
+geometries.solidCylinder = buildSolidCylinderGeometry();
 geometries.colorCylinder = buildClickCylinderGeometry();
+geometries.xAxis = buildCenterLine(1, 0, 0, 0.9, 0.15, 0.15);
+geometries.yAxis = buildCenterLine(0, 1, 0, 0.0, 0.6, 0.2);
+geometries.zAxis = buildCenterLine(0, 0, 1, 0.2, 0.2, 0.9);
 
 // End of file
 // ========================<-------------------------------------------->======================== //

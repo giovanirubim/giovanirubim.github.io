@@ -1,0 +1,18 @@
+:root {
+	--w: 1px;
+	--leftbar-width: calc(var(--w)*250);
+	--fsize-6: calc(var(--w)*24);
+	--fsize-5: calc(var(--w)*20);
+	--fsize-4: calc(var(--w)*18);
+	--fsize-3: calc(var(--w)*16);
+	--fsize-2: calc(var(--w)*14);
+	--fsize-1: calc(var(--w)*12);
+}
+.popup-container {
+}
+
+@media only screen and (max-width: 1200px) {
+	:root {
+		--w: 0.75px;
+	}
+}

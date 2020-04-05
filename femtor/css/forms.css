@@ -1,0 +1,88 @@
+div.popup-shadow {
+	--button-sy: calc(var(--w)*36);
+	--padding-x: calc(var(--w)*25);
+	--padding-y: calc(var(--w)*25);
+	--spacing-x: calc(var(--w)*10);
+	--spacing-y: calc(var(--w)*20);
+	--col-size: calc(var(--w)*92);
+	--input-sy: calc(var(--w)*26);
+}
+div.popup-shadow {
+	z-index: 2;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	opacity: 0;
+	background-color: rgba(16, 16, 16, 0.75);
+	overflow: auto;
+}
+div.popup-content-wrapper {
+	display: inline-block;
+	box-shadow: 0px 0px 10px #000;
+	background-color: #fff;
+}
+div.popup-container {
+	padding-top: calc(var(--padding-y) - var(--spacing-y));
+	padding-left: calc(var(--padding-x) - var(--spacing-x));
+	padding-right: var(--padding-x);
+	padding-bottom: var(--padding-y);
+}
+div.button-row input[type="button"],
+div.form-title,
+div.form-field {
+	margin-top: var(--spacing-y);
+	margin-left: var(--spacing-x);
+}
+div.form-title {
+	font-size: var(--fsize-6);
+	margin-bottom: 15px;
+	border-bottom: 1px solid #ccc;
+}
+div.button-row input[type="button"],
+div.form-field {
+	display: inline-block;
+}
+.col-1 { width: calc(var(--col-size)*1 + var(--spacing-x)*(1 - 1)); }
+.col-2 { width: calc(var(--col-size)*2 + var(--spacing-x)*(2 - 1)); }
+.col-3 { width: calc(var(--col-size)*3 + var(--spacing-x)*(3 - 1)); }
+.col-4 { width: calc(var(--col-size)*4 + var(--spacing-x)*(4 - 1)); }
+.col-5 { width: calc(var(--col-size)*5 + var(--spacing-x)*(5 - 1)); }
+.col-6 { width: calc(var(--col-size)*6 + var(--spacing-x)*(6 - 1)); }
+.col-7 { width: calc(var(--col-size)*7 + var(--spacing-x)*(7 - 1)); }
+.col-8 { width: calc(var(--col-size)*8 + var(--spacing-x)*(8 - 1)); }
+div.form-field-title {
+	height: calc(var(--fsize-3)*1.25);
+	font-size: var(--fsize-3);
+	font-weight: bold;
+	color: #000;
+}
+div.form-field input[type="text"] {
+	height: var(--input-sy);
+	font-size: var(--fsize-3);
+	width: 100%;
+	border: none;
+	border-bottom: 3px solid #aaa;
+	outline: none;
+}
+div.form-field input[type="text"]:focus {
+	border-color: #07f;
+}
+div.button-row {
+	margin-top: 10px;
+	text-align: right;
+}
+div.button-row input[type="button"] {
+	border: none;
+	background-color: transparent;
+	color: #444;
+	font-size: var(--fsize-3);
+	height: var(--button-sy);
+	cursor: pointer;
+	border-radius: 3px;
+}
+div.button-row input[type="button"].bg-submit {
+	color: #fff;
+	background-color: #07f;
+}
