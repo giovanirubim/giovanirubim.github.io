@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+	</head>
+	<body style="margin: 0px; overflow: hidden; font-size: 0px">
+		<canvas width="1024" height="765"></canvas>
+	</body>
+</html>
+<script type="text/javascript">
+
+	let sx = null;
+	let sy = null;
+
+	const TO_RAD = Math.PI/180;
+	const TO_DEG = 180/Math.PI;
+
+	const calcAngle = (x, y) => y >= 0 ? Math.acos(x) : Math.PI*2 - Math.acos(x);
+	const calcCapSurface = (rad, angle) => 2*Math.PI*rad*rad*(1 - Math.cos(angle/2));
+	const calcSurface = rad => 4*Math.PI*rad*rad;
+	
+	const canvas = document.querySelector('canvas');
+	const ctx = canvas.getContext('2d');
+
+	let sun_rad = null;
+	let sun_x = null;
+	let sun_y = null;
+	let dist = null;
+	let earth_rad = null;
+	let line_wid = null;
+
+	const calc = (dist, alfa, beta, earth_rad) => {
+
+		const ang1 = Math.PI + beta + alfa*0.5;
+		const ang2 = Math.PI + beta - alfa*0.5;
+
+		const v1x = dist + Math.cos(ang1)*earth_rad;
+		const v1y = Math.sin(ang1)*earth_rad;
+
+		const v2x = dist + Math.cos(ang2)*earth_rad;
+		const v2y = Math.sin(ang2)*earth_rad;
+
+		const cx = dist + Math.cos(Math.PI + beta)*earth_rad;
+		const cy = Math.sin(Math.PI + beta)*earth_rad;
+
+		const u_len = Math.sqrt(v1x*v1x + v1y*v1y);
+		const ux = v1x/u_len;
+		const uy = v1y/u_len;
+
+		const v_len = Math.sqrt(v2x*v2x + v2y*v2y);
+		const vx = v2x/v_len;
+		const vy = v2y/v_len;
+
+		const sun_ang1 = calcAngle(ux, uy);
+		const sun_ang2 = calcAngle(vx, vy);
+		const teta = sun_ang2 - sun_ang1;
+
+		return {
+			sun_ang1,
+			sun_ang2,
+			v1x,
+			v1y,
+			v2x,
+			v2y,
+			cx,
+			cy,
+			ang1,
+			ang2,
+			teta
+		};
+
+	};
+
+	const render = () => {
+
+		ctx.lineJoin = 'round';
+
+		ctx.fillStyle = '#00070a';
+		ctx.fillRect(0, 0, sx, sy);
+		
+		let t = new Date()/1000;
+
+		let light_dist = dist + Math.sin(t)*dist*0.05;
+		let alfa = 15*TO_RAD;
+		let beta = (Math.sin(t+Math.PI)*23.5 + 45)*TO_RAD;
+
+		const earth_x = sun_x + light_dist;
+		const earth_y = sun_y;
+
+		const {
+			sun_ang1,
+			sun_ang2,
+			v1x,
+			v1y,
+			v2x,
+			v2y,
+			cx,
+			cy,
+			ang1,
+			ang2
+		} = calc(light_dist, alfa, beta, earth_rad);
+
+		let n = 30;
+		let max_r = light_dist;
+		let shift = (new Date()%250)/250;
+
+		for (let i=0; i<=n; ++i) {
+				
+			let t = ((i + shift)%n)/n;
+			let rad = sun_rad - 5 + t*max_r;
+			
+			ctx.lineWidth = (1 - t)*5*line_wid;
+			ctx.strokeStyle = '#f20';
+			ctx.beginPath();
+			ctx.arc(sun_x, sun_y, rad, sun_ang1, sun_ang2);
+			ctx.stroke();
+
+			ctx.strokeStyle = 'rgba(255, 204, 0, 0.25)';
+			ctx.beginPath();
+			ctx.arc(sun_x, sun_y, rad, sun_ang2, sun_ang1);
+			ctx.stroke();
+
+		}
+
+		ctx.lineWidth = 3*line_wid;
+
+		ctx.strokeStyle = '#750';
+		ctx.fillStyle = '#fc0';
+		ctx.beginPath();
+		ctx.arc(sun_x, sun_y, sun_rad, 0, Math.PI*2);
+		ctx.fill();
+		
+		ctx.fillStyle = '#07f';
+		ctx.strokeStyle = '#037';
+		ctx.beginPath();
+		ctx.arc(earth_x, earth_y, earth_rad, 0, Math.PI*2);
+		ctx.fill();
+		ctx.stroke();
+
+		ctx.lineWidth = line_wid;
+		ctx.strokeStyle = '#fff';
+		ctx.beginPath();
+		ctx.arc(earth_x, earth_y, earth_rad/2, Math.PI, Math.PI + beta);
+		ctx.moveTo(earth_x, earth_y);
+		ctx.lineTo(sun_x + cx, sun_y + cy);
+		ctx.stroke();
+
+		ctx.strokeStyle = '#f00';
+		ctx.beginPath();
+		ctx.moveTo(sun_x + v1x, sun_y + v1y);
+		ctx.lineTo(earth_x, earth_y);
+		ctx.lineTo(sun_x + v2x, sun_y + v2y);
+		ctx.stroke();
+
+		ctx.lineWidth = line_wid;
+		ctx.beginPath();
+		ctx.arc(earth_x, earth_y, earth_rad, ang2, ang1);
+		ctx.stroke();
+
+		ctx.lineWidth = line_wid;
+		ctx.strokeStyle = '#000';
+		ctx.beginPath();
+		ctx.moveTo(earth_x, earth_y);
+		ctx.lineTo(earth_x - earth_rad, earth_y);
+		ctx.stroke();
+
+	};
+
+	const handleResize = () => {
+		let x = window.innerWidth;
+		let y = window.innerHeight;
+		if (x === sx && y === sy) return;
+		sx = x;
+		sy = y;
+		sun_y = sy/2;
+		sun_x = (sx - dist)/2;
+		let min = Math.min(sx, sy);
+		dist = min*0.4;
+		sun_rad = min*0.1;
+		earth_rad = min*0.05;
+		line_wid = Math.max(min*0.001, 1);
+		canvas.width = x;
+		canvas.height = y;
+		render();
+	};
+
+	handleResize();
+	setInterval(render, 0);
+
+	window.onresize = handleResize;
+
+	const realCalc = () => {
+		const sun_radius = 6.95510e5;
+		const earth_radius = 6.371e3;
+		const max_dist = 147e6;
+		const min_dist = 152e6;
+		const alfa = 10*TO_RAD;
+		const beta = 60*TO_RAD;
+		const total_energy = 3.86e26;
+		const floor_area = calcCapSurface(earth_radius, alfa);
+		[[max_dist, beta - 23.3*TO_RAD], [min_dist, beta + 23.3*TO_RAD]].forEach(([dist, ang]) => {
+			let {teta} = calc(dist, alfa, ang, earth_radius);
+			let energy = calcCapSurface(sun_radius, ang)/calcSurface(sun_radius)*total_energy;
+			ang = Math.round(TO_DEG*ang*10)/10;
+			console.log({dist, ang, energy});
+		});
+	};
+
+	realCalc();
+
+</script>

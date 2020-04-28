@@ -36,37 +36,37 @@
 		... white
 	});
 
-	let n = 100;
-	let limit_x = [Infinity, -Infinity];
-	let limit_y = [Infinity, -Infinity];
+	// let n = 100;
+	// let limit_x = [Infinity, -Infinity];
+	// let limit_y = [Infinity, -Infinity];
 
-	const addRandomLine = color => {
+	// const addRandomLine = color => {
 
-		const x = [];
-		const y = [];
+	// 	const x = [];
+	// 	const y = [];
 
-		let last_y = Math.floor(Math.random()*10 + 50);
-		for (let i=0; i<100; ++i) {
-			x[i] = 1920 + i;
-			y[i] = last_y;
-			last_y += (Math.random()*100 - 50)/100;
-		}
+	// 	let last_y = Math.floor(Math.random()*10 + 50);
+	// 	for (let i=0; i<100; ++i) {
+	// 		x[i] = 1920 + i;
+	// 		y[i] = last_y;
+	// 		last_y += (Math.random()*100 - 50)/100;
+	// 	}
 
-		limit_x = addLimits(limit_x, getLimit(x));
-		limit_y = addLimits(limit_y, getLimit(y));
+	// 	limit_x = addLimits(limit_x, getLimit(x));
+	// 	limit_y = addLimits(limit_y, getLimit(y));
 
-		plotter.addLine({x, y, color});
+	// 	plotter.addLine({x, y, color});
 
-	};
+	// };
 
-	addRandomLine('#07f');
-	addRandomLine('#f70');
+	// addRandomLine('#07f');
+	// addRandomLine('#f70');
 
-	const delta_y = limit_y[1] - limit_y[0];
-	plotter.min_x = limit_x[0];
-	plotter.max_x = limit_x[1];
-	plotter.min_y = limit_y[0] - delta_y*0.75;
-	plotter.max_y = limit_y[1] + delta_y*0.75;
+	// const delta_y = limit_y[1] - limit_y[0];
+	// plotter.min_x = limit_x[0];
+	// plotter.max_x = limit_x[1];
+	// plotter.min_y = limit_y[0] - delta_y*0.75;
+	// plotter.max_y = limit_y[1] + delta_y*0.75;
 
 	plotter.plot();
 
