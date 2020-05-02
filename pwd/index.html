@@ -2,59 +2,33 @@
 <html>
 	<head>
 		<title>Password Generator</title>
+		<meta charset="utf-8">
+		<meta name="theme-color" content="#000">
+		<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'/>
 		<script type="text/javascript" src="js/jquery-3.5.0.min.js"></script>
-		<style type="text/css">
-			#wrap {
-				position: fixed;
-				overflow: auto;
-				top: 0px;
-				left: 0px;
-				right: 0px;
-				bottom: 0px;
-				background-color: #222;
-			}
-			#wrap > div {
-				display: inline-block;
-			}
-			input[type="password"],
-			input[type="text"] {
-				border: 2px solid #fff;
-				height: 48px;
-				background-color: #111;
-				color: #fff;
-				text-align: center;
-				font-size: 26px;
-				width: 320px;
-				outline: none;
-				font-family: monospace;
-			}
-		</style>
+		<script type="module" src="js/main.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/style.css">
 	</head>
 	<body>
-		<div id="wrap">
-			<div class="center">
-				<input id="password" type="password">
+		<div id="centralizer" style="opacity:0;">
+			<div id="wrapper">
+				<div id="main">
+					<div class="field">
+						<div class="title">Password</div>
+						<div class="content">
+							<input id="pwd1" type="password">
+						</div>
+					</div>
+					<div class="field">
+						<div class="title">Confirm password</div>
+						<div class="content">
+							<input id="pwd2" type="password">
+						</div>
+					</div>
+					<canvas></canvas>
+					<input id="ok" type="button" value="Ok">
+				</div>
 			</div>
 		</div>
 	</body>
 </html>
-<script type="text/javascript">
-	
-	const wrap = $('#wrap');
-	const centerDiv = $('div.center');
-	const centralize = () => {
-		const full = window.getComputedStyle(wrap[0]);
-		const inner = window.getComputedStyle(centerDiv[0]);
-		const tx = parseInt(full.width);
-		const ty = parseInt(full.height);
-		const ix = parseInt(inner.width);
-		const iy = parseInt(inner.height);
-		centerDiv.css({
-			'margin-top': Math.floor((ty - iy)/2),
-			'margin-left': Math.floor((tx - ix)/2),
-		});
-	};
-	centralize();
-	$(window).bind('resize', centralize);
-
-</script>
