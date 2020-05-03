@@ -6,14 +6,9 @@ const split = (str, chunkSize) => {
 	}
 	return chunks;
 };
-export const digest = (args) => {
-	let bytes;
-	if (typeof args === 'string') {
-		bytes = utf8.encode(string)
-	} else if (!(args instanceof Array)) {
-		throw 'Argument must be a string or array of bytes';
-	} else {
-		bytes = args;
+export const digest = (bytes) => {
+	if (!(bytes instanceof Array)) {
+		throw 'The argument must be an array of bytes';
 	}
 	let bin = '';
 	bytes.forEach(byte => bin += byteToBin[byte]);

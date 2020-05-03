@@ -1,7 +1,7 @@
 body {
 	--color-1: #222;
 	--color-2: #fff;
-	--color-3: #000;
+	--color-3: #0d0d0d;
 	--color-4: #ddd;
 	font-family: monospace;
 	margin: 0px;
@@ -38,17 +38,32 @@ input.invalid {
 	display: inline-block;
 }
 .field {
-	margin-bottom: 15px;
+	margin-bottom: 10px;
 }
 .field .title {
 	font-size: 14px;
 }
-canvas {
-	margin-top: 15px;
+.field.check {
+	height: 34px;
+	border-radius: 4px;
+	margin-bottom: 0px;
 }
-#ok {
+.field.check .title {
+	margin-top: 8px;
+	margin-left: 10px;
+	float: left;
+}
+.field.check .content {
+	float: right;
+	margin-top: 8px;
+	margin-right: 8px;
+}
+canvas {
+	margin-top: 10px;
+	margin-bottom: 20px;
+}
+input[type="button"] {
 	display: block;
-	margin-top: 30px;
 	width: 256px;
 	border: none;
 	height: 42px;
@@ -58,4 +73,15 @@ canvas {
 	font-weight: bold;
 	font-size: 16px;
 	cursor: pointer;
+}
+#flags {
+	border: 1px solid #444;
+	background-color: #2a2a2a;
+	border-radius: 4px;
+	margin-bottom: 10px;
+}
+#result {
+	text-align: center;
+	height: 32px;
+	padding: 0px 4px;
 }

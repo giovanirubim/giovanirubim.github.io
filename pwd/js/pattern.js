@@ -196,10 +196,8 @@ export const setCanvas = arg => {
 		const {left, top} = canvas.getBoundingClientRect();
 		e.preventDefault();
 		[e] = e.changedTouches;
-		console.log(e);
 		let x = e.pageX - left;
 		let y = e.pageY - top;
-		console.log('start', x, y);
 		handleMousedown(x, y);
 	};
 	canvas.ontouchmove = e => {
@@ -208,7 +206,6 @@ export const setCanvas = arg => {
 		[e] = e.changedTouches;
 		let x = e.pageX - left;
 		let y = e.pageY - top;
-		console.log('move', x, y);
 		handleMousemove(x, y);
 	};
 	canvas.ontouchend = canvas.ontouchcancel = canvas.ontouchleave = e => {
@@ -217,7 +214,6 @@ export const setCanvas = arg => {
 		[e] = e.changedTouches;
 		let x = e.pageX - left;
 		let y = e.pageY - top;
-		console.log('end', x, y);
 		handleMouseup(x, y);
 	};
 };

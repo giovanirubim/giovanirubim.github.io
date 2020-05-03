@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<title>Password Generator</title>
+		<link rel="shortcut icon" href="favicon.ico"/>
 		<meta charset="utf-8">
 		<meta name="theme-color" content="#000">
 		<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'/>
@@ -12,7 +13,7 @@
 	<body>
 		<div id="centralizer" style="opacity:0;">
 			<div id="wrapper">
-				<div id="main">
+				<div class="page">
 					<div class="field">
 						<div class="title">Password</div>
 						<div class="content">
@@ -27,6 +28,43 @@
 					</div>
 					<canvas></canvas>
 					<input id="ok" type="button" value="Ok">
+				</div>
+				<div class="page" style="display:none">
+					<script type="text/javascript">
+						['Usage', 'Length', 'Counter', 'Year'].forEach(str => {
+							document.write(`
+								<div class="field">
+									<div class="title">${ str }</div>
+									<div class="content">
+										<input id="${ str.toLowerCase() }" type="text">
+									</div>
+								</div>
+							`);
+						});
+						document.write('<div id="flags">');
+						['Digits', 'Lower case', 'Upper case', 'Special ASCII', 'Special non-ASCII'].forEach((str, i) => {
+							let id = str.replace(/ |-/g, '').toLowerCase();
+							document.write(`
+								<div class="field check">
+									<div class="title">${ str }</div>
+									<div class="content">
+										<input id="${ id }" type="checkbox"${ i !== 4? ' checked': '' }>
+									</div>
+								</div>
+							`)
+						});
+						document.write('</div>');
+					</script>
+					<input id="generate" type="button" value="Generate">
+				</div>
+				<div class="page" style="display:none">
+					<div class="field">
+						<div class="title">Generated password</div>
+						<div class="content">
+							<input id="result" type="text" disabled>
+						</div>
+					</div>
+					<input id="back" type="button" value="Go back">
 				</div>
 			</div>
 		</div>
