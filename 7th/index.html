@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<script type="text/javascript" src="script.js"></script>
+		<style type="text/css">
+			body {
+				background-color: #222;	
+			}
+			div#full {
+				position: absolute;
+				top: 0px;
+				left: 0px;
+				right: 0px;
+				bottom: 0px;
+			}
+			table {
+				height: 100%;
+				margin: auto;
+			}
+			div#wrap {
+				padding: 30px;
+				background-color: #777;
+				height: 600px;
+				width: 800px;
+				overflow: hidden;
+				border-radius: 30px;
+				box-shadow: 0px 0px 10px #000;
+			}
+			div#wrap img {
+				height: 100%;
+				width: 100%;
+			}
+			div.layer {
+				height: 600px;
+				width: 800px;
+				margin-top: -600px;
+				float: left;
+			}
+			div#wrap div.layer:first-child {
+				margin-top: 0px;
+			}
+			* {
+				font-size: 0px;
+			}
+			div#button1 {
+				height: 40px;
+				width: 40px;
+				margin-top: 492px;
+				margin-left: 685px;
+				border-radius: 50%;
+				cursor: pointer;
+			}
+			div#button2 {
+				height: 31px;
+				width: 31px;
+				opacity: 0.1;
+				border: 2px solid #FFF;
+				margin-top: 197px;
+				margin-left: 28px;
+				border-radius: 50%;
+				cursor: pointer;
+			}
+			div.message {
+				font-family: monospace;
+				font-size: 60px;
+				font-variant: small-caps;
+				text-align: center;
+				margin-top: 260px;
+				color: #555;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="full">
+			<table><tr><td>
+				<div id="wrap">
+					<div class="layer">
+						<div class="message">Carregando...</div>
+					</div>
+				</div>
+			</td></tr></table>
+		</div>
+	</body>
+</html>

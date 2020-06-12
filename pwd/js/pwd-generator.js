@@ -42,7 +42,6 @@ export const generate = (config) => {
 		specialascii,
 		specialnonascii,
 	].join(':'));
-	console.log(seed);
 	length = parseInt(length);
 	if (isNaN(length)) throw 'Invalid length';
 	srand(seed);

@@ -94,7 +94,7 @@ $(document).ready(() => {
 	$('#pwd1,#pwd2').bind('keyup change', () => {
 		if (pwd1.val() === pwd2.val()) pwd2.removeClass('invalid');
 	});
-	$('#year').val(new Date().getFullYear())
+	$('#year').val();
 	$('#counter').val('1');
 	$('#length').val(16);
 	const validate1 = createValidation({
