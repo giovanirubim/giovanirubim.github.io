@@ -1,0 +1,274 @@
+<html>
+	<head>
+		<title></title>
+		<style type="text/css">
+			body {
+				background-color: #ddd;
+			}
+			canvas {
+				background-color: #2a2a2a;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas></canvas>
+	</body>
+</html>
+<script type="text/javascript">
+
+	const width = 800;
+	const height = 600;
+	
+	const canvas = document.querySelector('canvas');
+	const ctx = canvas.getContext('2d');
+	canvas.width = width;
+	canvas.height = height;
+
+	const margin = {
+		top: 50,
+		left: 50,
+		right: 50,
+		bottom: 50,
+	};
+
+	const limits = (array) => {
+		if (array.limits) {
+			return array.limits;
+		}
+		let max = -Infinity;
+		let min = Infinity;
+		array.forEach(val => {
+			max = Math.max(max, val);
+			min = Math.min(min, val);
+		})
+		return array.limits = { max, min };
+	};
+
+	const data = {
+		suspects: [0,0,0,0,73,81,107,110,131,140,121,104,104,73,77,92,63,40,46,51,51,62,61,53,68,67,92,92,52,52,44,44,44,57,52,52,44,48,45,45,53,53,51,65,65,59,41,49,35,32,33,28,28,25,2,11,11,10,10,30,30,30,28,17,44,92,92,80,137,137,103,48,55,55,70,88,93,60,60,54,47,62,105,112,121,142,181,295,250,180,247
+		],
+		confirmed: [1,1,1,1,4,4,4,5,5,5,5,10,10,11,13,13,23,25,25,27,28,29,29,29,30,30,30,30,35,35,36,36,36,38,38,38,39,40,42,42,42,42,47,49,49,53,53,54,55,57,58,62,62,67,67,68,68,76,76,77,78,78,80,80,81,86,96,97,104,118,122,124,127,127,128,130,136,137,143,147,162,163,182,200,221,233,255,273,273,298,315
+		],
+		discarded: [6,6,6,6,11,13,19,31,31,37,70,106,106,147,148,148,181,210,215,218,279,289,311,328,328,338,339,339,398,409,446,446,446,468,480,480,480,511,522,522,536,536,567,571,571,579,597,601,614,619,626,801,801,815,907,1002,1002,1078,1078,1121,1170,1170,1188,1303,1441,1493,1493,1545,1670,1670,1734,1847,1976,1976,1991,1991,2092,2246,2316,2354,2372,2390,2463,2546,2549,2619,2721,2754,2795,2938,2950
+		],
+		deaths: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4
+		],
+		recovered: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,10,10,12,14,16,17,18,18,18,19,19,19,22,24,24,24,24,24,24,24,26,31,31,31,32,32,33,34,34,36,36,36,42,42,42,44,44,44,44,47,47,56,56,56,61,61,61,61,64,67,67,77,77,94,94,96,96,96,97,98,102,102,110,115,115,115,126,141,147,148,152,154,154,164,170
+		],
+		hospitalized: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,4,3,3,3,3,3,3,3,4,3,4,3,2,2,4,3,3,3,1,1,1,2,3,2,2,2,2,3,3,3,3,3,3,3,4,4,5,5,5,4,4,4,5,5,6,6,5,3,5,5,6,5,6,5,6,9,8,10,13,11,11,9,11
+		],
+		active: [1,1,1,1,4,4,4,5,5,5,5,10,10,11,13,4,13,15,13,13,12,12,11,11,12,11,11,11,13,11,12,12,12,14,14,14,13,9,11,11,10,10,14,15,15,17,17,18,13,15,16,18,18,23,23,21,21,20,20,21,17,17,19,19,17,19,29,20,27,24,28,28,31,31,31,32,34,35,33,32,47,48,56,59,74,85,103,119,119,134,145
+		],
+		tested: [7,0,0,0,8,2,6,13,0,6,33,41,0,42,161,0,43,31,5,5,62,11,22,17,1,10,1,0,64,11,38,0,0,24,12,0,1,32,13,0,14,0,36,6,620,12,18,5,14,7,8,179,0,19,92,96,0,84,0,44,50,0,20,115,139,57,10,53,132,14,68,115,132,0,16,2121,107,155,76,42,33,19,92,101,24,82,124,51,41,168,29
+		]
+	};
+
+	const combineLimits = (names) => {
+		let a = Infinity;
+		let b = -Infinity;
+		names.forEach(name => {
+			const { min, max } = limits(data[name]);
+			a = Math.min(min, a);
+			b = Math.max(max, b);
+		});
+		return {
+			min: a,
+			max: b
+		};
+	};
+
+	const averages = {};
+	const average = (name, n) => {
+		const key = `${name} ${n}`;
+		let res = averages[key];
+		if (res) return res;
+		res = [];
+		const array = data[name];
+		let sum = 0;
+		for (let i=0; i<array.length; ++i) {
+			sum += array[i];
+			if (i >= n) {
+				sum -= array[i - n];
+			}
+			res[i] = sum/n;
+		}
+		return res;
+	};
+
+	let mouse_i;
+	let min_x, max_x, mul_x, sum_x;
+	let min_y, max_y, mul_y, sum_y;
+
+	const plots = [];
+	const addPlot = ({
+		name,
+		array,
+		color,
+		a = 0,
+		b = array.length - 1,
+		width = 1
+	}) => {
+		plots.push({ name, array, color, a, b, width });
+	};
+
+	const subtitleSize = 16;
+	const subtitleSpace = 3;
+
+	const render = () => {
+		ctx.lineWidth = 3;
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+		ctx.fillStyle = '#222';
+		ctx.fillRect(0, 0, width, height);
+		min_x = Infinity;
+		max_x = -Infinity;
+		min_y = Infinity;
+		max_y = -Infinity;
+		plots.forEach(plot => {
+			const { array, a, b } = plot;
+			for (let i=a; i<=b; ++i) {
+				const y = array[i];
+				max_y = Math.max(max_y, y);
+				min_y = Math.min(min_y, y);
+			}
+			min_x = Math.min(min_x, a);
+			max_x = Math.max(max_x, b);
+		});
+		mul_x = (width - margin.right - margin.left)/(max_x - min_x);
+		sum_x = margin.left - min_x*mul_x;
+		mul_y = (margin.top - height + margin.bottom)/(max_y - min_y);
+		sum_y = height - margin.bottom - min_y*mul_y;
+		plots.forEach((plot, pos) => {
+			const { array, name, color, a, b, width } = plot;
+			ctx.lineWidth = width;
+			ctx.font = subtitleSize + 'px monospace';
+			ctx.fillStyle = color;
+			ctx.textBaseline = 'top';
+			ctx.textAlign = 'left';
+			ctx.fillText(name, margin.left, margin.top + (subtitleSize + subtitleSpace)*pos);
+			ctx.strokeStyle = color;
+			ctx.beginPath();
+			for (let i=a; i<=b; ++i) {
+				const x = i*mul_x + sum_x;
+				const y = array[i]*mul_y + sum_y;
+				if (i) {
+					ctx.lineTo(x, y);
+				} else {
+					ctx.moveTo(x, y);
+				}
+			}
+			ctx.stroke();
+			if (mouse_i != null) {
+				ctx.textBaseline = 'middle';
+				ctx.textAlign = 'right';
+				const x = mouse_i*mul_x + sum_x;
+				const val = array[mouse_i];
+				const y = val*mul_y + sum_y;
+				ctx.font = subtitleSize + 'px monospace';
+				let text = val.toFixed(2);
+				text = text.replace(/0*$/, '').replace(/.$/, '');
+				ctx.fillText(text, margin.left, y - 5);
+			}
+		});
+	};
+
+	// addPlot({
+	// 	name: 'Suspeitos',
+	// 	array: data.suspects,
+	// 	color: '#07f',
+	// 	width: 1,
+	// });
+
+	// addPlot({
+	// 	name: 'Confirmados',
+	// 	array: data.confirmed,
+	// 	color: '#fa0',
+	// 	width: 1,
+	// });
+	
+	// addPlot({
+	// 	name: 'Mortes',
+	// 	array: data.deaths,
+	// 	color: '#e11',
+	// 	width: 2,
+	// });
+
+	// addPlot({
+	// 	name: 'Ativos',
+	// 	array: data.active,
+	// 	color: '#fff',
+	// 	width: 3,
+	// });
+
+	const r0_delta = 14;
+	const calcR0 = () => {
+		const array = data.active;
+		const map = {};
+		const res = [];
+		const calc = (a, b) => {
+			a = Math.max(a, 0);
+			b = Math.min(array.length - 1, b);
+			const n0 = array[a];
+			const n1 = array[b];
+			const pow = n0 != n1? Math.pow(n1/n0, 1/(b - a)): 1;
+			// let tot = n0;
+			// let err = 0;
+			// for (let i=a+1; i<=b; ++i) {
+			// 	tot *= pow;
+			// 	const dif = tot - array[i];
+			// 	err += dif*dif;
+			// }
+			return Math.pow(pow, 14);
+		};
+		const find = (a, b) => {
+			const key = `${a} ${b}`;
+			return map[key] ?? (map[key] = calc(a, b));
+		};
+		const last = array.length - 1;
+		for (let i=0; i<=last; ++i) {
+			// const a1 = Math.max(0, Math.min(last, i + r0_delta - 1) - r0_delta + 1);
+			// const a0 = Math.max(0, i - r0_delta + 1);
+			// let err = Infinity;
+			// let pow = 1;
+			// for (let a=a0; a<=a1; ++a) {
+			// 	const b = Math.min(last, a + r0_delta - 1);
+			// 	if (b > a) {
+			// 		const temp = find(a, b);
+			// 		if (temp.err < err) {
+			// 			pow = temp.pow;
+			// 			err = temp.err;
+			// 		}
+			// 	}
+			// }
+			// console.log(pow);
+			const a = Math.floor(i - r0_delta/2);
+			const b = Math.ceil(i + r0_delta/2);
+			res[i] = find(a, b);
+		}
+		return res;
+	};
+
+	addPlot({
+		name: 'R-0',
+		array: calcR0(),
+		color: '#fff'
+	});
+
+	render();
+
+	canvas.onmousemove = e => {
+		let prev = mouse_i;
+		mouse_i = (e.offsetX - sum_x)/mul_x;
+		if (mouse_i < min_x || mouse_i > max_x) {
+			mouse_i = null;
+		} else {
+			mouse_i = Math.round(mouse_i);
+			mouse_i = Math.max(min_x, mouse_i);
+			mouse_i = Math.min(max_x, mouse_i);
+		}
+		if (mouse_i !== prev) {
+			render();
+		}
+	};
+	
+</script>
