@@ -54,6 +54,7 @@
 		daily.recovered = [];
 		daily.confirmed = [];
 		total.tested = [];
+		daily.testsPerCase = [];
 		
 		for (let i=0; i<size; ++i) {
 			daily.recovered.push(total.recovered[i] - (total.recovered[i-1]||0));
@@ -62,6 +63,12 @@
 			daily.tested.push(total.tested[i] - (total.tested[i-1]||0));
 			daily.confirmed.push(total.confirmed[i] - (total.confirmed[i-1]||0));
 			current.active.push(total.confirmed[i] - total.recovered[i] - total.deaths[i]);
+
+			if (daily.newCases[i]) {
+				daily.testsPerCase.push(daily.tested[i]/daily.newCases[i]);
+			} else {
+				daily.testsPerCase.push(i > 0? daily.testsPerCase[i-1]: 0);
+			}
 		}
 		
 		const queue = [];
@@ -369,6 +376,30 @@
 				array: daily.r0,
 				color: '#fff',
 				width: 2
+			},
+		]
+	},
+	{
+		ini: 0,
+		end: lastIndex,
+		plots: [
+			{
+				name: 'Testes por Caso',
+				array: daily.testsPerCase,
+				color: '#07f',
+				width: 1
+			},
+			{
+				name: 'Testes por Caso (Média 7 dias)',
+				array: average(daily.testsPerCase, 7),
+				color: '#fff',
+				width: 2
+			},,
+			{
+				name: 'Testes por Caso (Média 14 dias)',
+				array: average(daily.testsPerCase, 14),
+				color: '#f70',
+				width: 1
 			},
 		]
 	});
