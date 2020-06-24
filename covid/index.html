@@ -402,6 +402,30 @@
 				width: 1
 			},
 		]
+	},
+	{
+		ini: 0,
+		end: lastIndex,
+		plots: [
+			{
+				name: 'Ativos',
+				array: current.active,
+				color: '#777',
+				width: 1,
+			},
+			{
+				name: 'Internados',
+				array: current.hospitalized,
+				color: '#fb0',
+				width: 2,
+			},
+			{
+				name: 'Mortes',
+				array: total.deaths,
+				color: '#e22',
+				width: 2,
+			}
+		]
 	});
 
 	const setPlots = () => {
