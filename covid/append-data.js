@@ -3,7 +3,7 @@ const data = lib.load();
 const {argv} = process;
 const argc = argv.length;
 if (argc < 8) {
-	console.log(`Missing ${8 - argc} arguments`);
+	console.log(`Missing ${8 - argc} arguments  (confirmed, discarded, deaths, recovered, suspects, hospitalized) `);
 	process.exit(0);
 } else if (argc > 8) {
 	console.log('Too many arguments');
