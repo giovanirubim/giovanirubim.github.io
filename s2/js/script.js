@@ -1,10 +1,10 @@
+const endTime = new Date('2020-11-14T23:00:00.000Z');
 window.onload = _ => {
 		
 	const canvas = document.querySelector("canvas");
 	const ctx = canvas.getContext("2d");
 	const screenSize = {x: null, y: null};
 
-	const endTime = new Date("Sun Dec 28 2019 21:45:00 GMT-0400");
 	const timer = new ArcTimer(endTime);
 	window.timer = timer;
 
