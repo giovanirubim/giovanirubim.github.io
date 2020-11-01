@@ -65,12 +65,12 @@ class ArcTimer {
 		ctx.textAlign = "right";
 		ctx.textBaseline = "middle";
 		ctx.font = fontSize + "px monospace";
-		ctx.fillStyle = "#fff";
+		ctx.fillStyle = "#b69fd8";
 
 		const arc = (rad, p, val, text) => {
 			text = val + " " + text;
 			ctx.lineWidth = lineWidth;
-			ctx.strokeStyle = "#fff";
+			ctx.strokeStyle = "#b69fd8";
 			ctx.beginPath();
 			ctx.arc(cx, cy, rad, iniDeg, iniDeg + tau*p);
 			ctx.stroke();

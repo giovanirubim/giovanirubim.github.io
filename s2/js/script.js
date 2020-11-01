@@ -80,7 +80,8 @@ window.onload = _ => {
 		const maxRadius = Math.min(screenSize.x, screenSize.y)*0.45;
 		const x = screenSize.x*0.5;
 		const y = screenSize.y*0.5;
-		ctx.clearRect(0, 0, screenSize.x, screenSize.y);
+		ctx.fillStyle = '#222'
+		ctx.fillRect(0, 0, screenSize.x, screenSize.y);
 		ctx.textAlign = "left";
 		ctx.textBaseline = "top";
 		ctx.font = "16px monospace";
