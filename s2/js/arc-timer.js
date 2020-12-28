@@ -61,6 +61,14 @@ class ArcTimer {
 		const fontSize = lineWidth*0.6;
 		const textSpace = lineWidth*0.4;
 
+		ctx.strokeStyle = "#b69fd8";
+		ctx.fillStyle = `#322f35`;
+		ctx.lineWidth = maxRadius*0.0075
+		ctx.beginPath();
+		ctx.arc(cx, cy, maxRadius*1.05, 0, tau);
+		ctx.fill();
+		ctx.stroke();
+
 		ctx.lineJoin = "round";
 		ctx.textAlign = "right";
 		ctx.textBaseline = "middle";
@@ -75,15 +83,17 @@ class ArcTimer {
 			ctx.arc(cx, cy, rad, iniDeg, iniDeg + tau*p);
 			ctx.stroke();
 			ctx.lineWidth = lineWidth*0.2;
-			ctx.strokeStyle = "#222";
+			ctx.strokeStyle = "#322f35";
 			ctx.strokeText(text, cx - textSpace, cy + fontSize*0.2 - rad);
 			ctx.fillText(text, cx - textSpace, cy + fontSize*0.2 - rad);
 		};
+
 		arc(r1, stairP1, Math.floor(ms/1000), "s");
 		arc(r2, p2, min, "min");
 		arc(r3, p3, hrs, "hr");
 		arc(r4, p4, dys, "d");
 		arc(r5, p5, mnt, "m");
+
 	}
 
 }
