@@ -3,8 +3,9 @@ const filterCode = (str) => str
 	.replace(/o/ig, '0')
 	.replace(/i/ig, '1')
 	.replace(/s/ig, '5')
-	.replace(/g/ig, '9')
 	.replace(/z/ig, '2')
+	.replace(/q/ig, '9')
+	.replace(/g/ig, '6')
 	.replace(/[^a-fA-F\d\-/]/g, '')
 const strToHex = (str) => {
 	return utf8.encode(str)
