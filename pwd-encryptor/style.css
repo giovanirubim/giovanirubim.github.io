@@ -1,0 +1,55 @@
+* {
+	font-family: 'Roboto', monospace;
+	color: #fff;
+}
+body {
+	font-size: 0px;
+	margin: 0px;
+	text-align: center;
+	background-color: rgb(50, 77, 130);
+	--input-size: 300px;
+}
+.main {
+	width: calc(var(--input-size) + 10px);
+	display: inline-block;
+}
+.text {
+	font-size: 20px;
+}
+input, textarea {
+	background-color: transparent;
+	border: 1px solid rgba(255, 255, 255, 0.5);
+	border-radius: 5px;
+	margin-top: 20px;
+	font-size: 16px;
+}
+textarea {
+	--padding: 10px;
+	resize: none;
+	padding: var(--padding);
+	width: calc(var(--input-size) - var(--padding)*2);
+	background-color: rgba(255, 255, 255, 0.1);
+}
+input {
+	width: var(--input-size);
+	opacity: 0.75;
+	height: 40px;
+	transition: opacity 0.5s, background-color 0.5s, border-color 0.5s;
+}
+input[type="button"]:hover, input[type="text"]:focus {
+	opacity: 1;
+	background-color: rgba(255, 255, 255, 0.1);
+	border-color: #fff;
+}
+input[type="text"] {
+	text-align: center;
+}
+input[type="button"] {
+	cursor: pointer;
+}
+input.error {
+	background-color: rgba(255, 32, 32, 0.85);
+}
+input.ok {
+	background-color: rgba(64, 255, 90, 0.5);
+}
