@@ -57,7 +57,7 @@ const options = async () => {
 	dom.text.text('O que deseja fazer?')
 	addButton('Salvar uma senha').on('click', store)
 	addButton('Recuperar senha de um código').on('click', recover)
-	addButton('Criar uma senha segura')
+	// addButton('Criar uma senha segura')
 	show()
 }
 const showCode = async (code) => {
