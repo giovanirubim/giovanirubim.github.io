@@ -1,4 +1,8 @@
-import {encrypt, decrypt} from './encryption.js'
+import {
+	encrypt,
+	decrypt,
+	validCode
+} from './encryption.js'
 let key = ''
 const dom = {}
 const centralize = () => {
@@ -29,7 +33,7 @@ const show = () => new Promise((done) => {
 const addInput = () => {
 	dom.content.append(`
 		<div>
-			<input type="text">
+			<input type="text" autocapitalize="none">
 		</div>
 	`)
 	return dom.content.find('input').last()
@@ -79,7 +83,12 @@ const recover = async() => {
 	dom.text.text('Insira o código salvo da senha')
 	let input = addInput()
 	addButton('Continuar').on('click', () => {
-		showPass(decrypt(key, input.val()))
+		let code = validCode(input.val())
+		if (!code) {
+			alert('Ops!\nParece que há um erro de digitação no código')
+		} else {
+			showPass(decrypt(key, code))
+		}
 	})
 	addButton('Voltar').on('click', options)
 	show()
