@@ -1,7 +1,7 @@
 const range = (a, b) => {
 	a = a.charCodeAt(0)
 	b = b.charCodeAt(0)
-	return new Array(a - b + 1).fill().map((_,i) => String.fromCharCode(a + i))
+	return new Array(b - a + 1).fill().map((_,i) => String.fromCharCode(a + i))
 }
 const alphabets = {
 	uppercase: range('A', 'Z'),
@@ -31,10 +31,12 @@ const shuffle = (array) => {
 	}
 	return array
 }
-export default (size, template = 'aA0?') => {
+const generate = (size, template = 'aA0?') => {
 	let res = []
 	let all = []
-	for (alphabet of alphabets) {
+	const alphabets = getAlphabets(template)
+	for (name in alphabets) {
+		const alphabet = alphabets[name]
 		res.push(pick(alphabet))
 		all.push(...alphabet)
 	}
@@ -44,3 +46,4 @@ export default (size, template = 'aA0?') => {
 	shuffle(res)
 	return res.join('')
 }
+export default generate
