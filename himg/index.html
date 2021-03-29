@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<style type="text/css">
+			* {
+				font-family: monospace;
+				color: #fff;
+			}
+			body {
+				background-color: #222;
+			}
+			#panel div {
+				margin: 5px;
+			}
+			input {
+				background-color: #111;
+				border: 1px solid #777;
+			}
+			canvas {
+				background-color: #555;
+				padding: 10px;
+				box-shadow: -4px 4px 10px #000;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="panel">
+			<form>
+				<div><input type="file" value="Upload image"></div>
+				<div>
+					Text:
+					<input type="text" id="text" pattern="^[\x20-\x7e]*$">
+					(max: <span id="maxlength"></span>)
+				</div>
+				<div>
+					Bits affected: <input type="number" id="bits" placeholder="2" min="1" max="5">
+				</div>
+				<div>
+					Number of rows: <input type="number" id="rows" placeholder="4" min="1" max="16">
+				</div>
+				<div>
+					Number of cols: <input type="number" id="cols" placeholder="4" min="1" max="16">
+				</div>
+				<div>
+					<input type="submit" value="Encode">
+					<input type="button" value="Decode" id="decode">
+				</div>
+			</form>
+		</div>
+		<canvas></canvas>
+	</body>
+</html>
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="module" src="index.js"></script>
