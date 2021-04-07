@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+	</head>
+	<body>
+		<input type="text"> <span></span>
+	</body>
+</html>
+<script type="text/javascript">
+	const input = document.querySelector('input')
+	const span = document.querySelector('span')
+	const parse = (str) => {
+		str = str.split(/[^\d]/)
+		if (str.length !== 2) {
+			return null
+		}
+		let [h, m] = str.map(Number)
+		return h*60 + m
+	}
+	const toStr = (val) => {
+		let m = val%60
+		let h = Math.round((val - m)/60)
+		return h + ':' + (''+m).padStart(2, '0')
+	}
+	const update = () => {
+		let ini = parse(input.value)
+		if (ini == null) return
+		let out = '6:00 7:30 8:00 9:00'.split(' ').map((str) => {
+			return toStr(parse(str) + ini) + ` (${str})`
+		})
+		span.innerText = out.join('; ')
+	}
+	input.onkeyup = update
+</script>

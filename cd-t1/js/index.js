@@ -234,7 +234,6 @@ steps.push(async function() {
 }, async function() {
 	log('Removendo Ivaí')
 	dropDataset('ivai');
-	datasets.forEach(log);
 }, async function() {
 	log('Índices de correlação (%)');
 	const fields = [
@@ -297,7 +296,7 @@ steps.push(async function() {
 });
 
 $(document).ready(async () => {
-	log.disable();
+	// log.disable();
 	// let logIndex = 9;
 	for (let i=0; i<steps.length; ++i) {
 		const step = steps[i];
