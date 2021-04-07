@@ -2,7 +2,7 @@ import Dataset from './dataset.js';
 
 export const load = async (name) => {
 
-	let text = await $.get(`/csv/${name}.csv`);
+	let text = await $.get(`csv/${name}.csv`);
 	let table = text
 		.replace(/(^|\n)\s+(\n|$)/, '')
 		.split(/\s*\n\s*/)
