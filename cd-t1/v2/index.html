@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<meta charset="utf-8">
+		<script type="text/javascript" src="js/lib/jquery-3.6.0.min.js"></script>
+		<script type="text/javascript" src="js/lib/chart.min.js"></script>
+		<script type="module" src="js/index.js"></script>
+		<style type="text/css">
+			body {
+				width: 640px;
+				margin: 20px auto;
+				font-family: monospace;
+				font-size: 12px;
+			}
+			.line {
+				margin-bottom: 5px;
+			}
+			.null {
+				background-color: #f70;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="panel" class="line">
+			<select name="cityId"></select>
+			<select name="display">
+				<option value="line_chart">Gráfico - Linha</option>
+				<option value="bar_chart">Gráfico - Barras</option>
+				<option value="table">Tabela</option>
+			</select>
+		</div>
+		<div id="plot_panel" class="plot">
+			<div class="line">x: <select name="x"></select></div>
+			<div class="line">
+				y:
+				<select name="y1">
+					<option value="">Nenhum</option>
+				</select>
+				<select name="y2">
+					<option value="">Nenhum</option>
+				</select>
+			</div>
+			<div class="line line-chart">Média móvel: <input type="number" name="movingAverage" min="1" step="1"></div>
+			<div class="line bar-chart">Grupos: <input type="number" name="groups" min="1" step="1"></div>
+		</div>
+		<div id="plot" class="line plot"></div>
+		<div id="table_panel" class="table">
+			<div class="line">
+				Ordenar por: <select name="orderBy"></select>
+				<select name="orderMode">
+					<option value="asc">Asc</option>
+					<option value="desc">Desc</option>
+				</select>
+			</div>
+		</div>
+		<div id="table" class="line table"></div>
+	</body>
+</html>
