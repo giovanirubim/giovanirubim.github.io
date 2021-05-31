@@ -1,8 +1,7 @@
-import {
-	encrypt,
-	decrypt,
-	validCode
-} from './encryption.js'
+import { encrypt, decrypt, validCode } from './encryption.js'
+import * as PwdSymbol from './pwd-symbol.js';
+window.PwdSymbol = PwdSymbol;
+
 let key = ''
 const dom = {}
 const centralize = () => {
@@ -78,6 +77,10 @@ const showPass = async(pass) => {
 	addButton('Voltar').on('click', options)
 	show()
 }
+// const checkSymbol = () => {
+// 	await hide()
+// 	dom.text.text('Este é seu símbolo?')
+// }
 const recover = async() => {
 	await hide()
 	dom.text.text('Insira o código salvo da senha')

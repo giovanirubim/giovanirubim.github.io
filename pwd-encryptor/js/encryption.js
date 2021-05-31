@@ -30,7 +30,7 @@ const xorHex = (a, b) => {
 	return res
 }
 
-const hashStr = (str) => new sjcl.hash.sha256()
+export const hashString = (str) => new sjcl.hash.sha256()
 	.update(str)
 	.finalize()
 	.map(int32ToHex)
@@ -57,16 +57,16 @@ export const validCode = (code) => {
 		return false
 	}
 	const checksum = code.replace(/^\w+\/\w+-/, '')
-	const hash = hashStr(code.replace(/(\w+)\/(\w+)-.*$/, '$1$2'))
+	const hash = hashString(code.replace(/(\w+)\/(\w+)-.*$/, '$1$2'))
 	return hash.substr(0, 2) === checksum? code: false;
 }
 
 export const encrypt = (key, text) => {
 	let salt = randomHex(6)
 	let hexText = strToHex(text)
-	let hash = hashStr(salt + key).substr(0, hexText.length)
+	let hash = hashString(salt + key).substr(0, hexText.length)
 	let encrypted = xorHex(hash, hexText)
-	let checksum = hashStr(salt + encrypted).substr(0, 2)
+	let checksum = hashString(salt + encrypted).substr(0, 2)
 	let output = salt + '/' + encrypted + '-' + checksum
 	return output.toUpperCase()
 }
@@ -74,7 +74,7 @@ export const encrypt = (key, text) => {
 export const decrypt = (key, input) => {
 	input = fixCode(input.toLowerCase())
 	let [, salt, encrypted] = input.match(/^(\w+)\/(\w+)-(\w+)$/)
-	let hash = hashStr(salt + key).substr(0, encrypted.length)
+	let hash = hashString(salt + key).substr(0, encrypted.length)
 	let hexText = xorHex(hash, encrypted)
 	return hexToStr(hexText)
 }
