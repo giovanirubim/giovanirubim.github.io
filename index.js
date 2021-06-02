@@ -7,6 +7,7 @@ const mimeMap = {
 	'html': 'text/html',
 	'css': 'text/css',
 	'js': 'application/javascript',
+	'json': 'application/json',
 };
 const getMime = (path) => {
 	const ext = path

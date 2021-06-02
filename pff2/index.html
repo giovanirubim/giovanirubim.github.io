@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>PFF2 - Manaus</title>
+		<link rel="stylesheet" type="text/css" href="main.css">
+		<script type="text/javascript" src="jquery-3.6.0.min.js"></script>
+		<script type="module" src="index.js"></script>
+	</head>
+	<body>
+		<div id="main">
+			<div id="filters">
+				<div class="field">
+					<div class="label">Modelo</div>
+					<select name="modelo">
+						<option value="*">Qualquer</option>
+					</select>
+				</div>
+				<div class="field tiny">
+					<div class="label">Min.</div>
+					<input type="number" name="min" placeholder="0,00">
+				</div>
+				<div class="field tiny">
+					<div class="label">Max.</div>
+					<input type="number" name="max" placeholder="99,99">
+				</div>
+				<div class="field small">
+					<div class="label">Qtd.</div>
+					<input type="number" name="amount" placeholder="qualquer">
+				</div>
+				<div class="field small">
+					<div class="label">Valvulada</div>
+					<select name="valvula">
+						<option></option>
+						<option value="true">Sim</option>
+						<option value="false">Não</option>
+					</select>
+				</div>
+			</div>
+			<div id="results">
+				<div class="result">
+					<div class="header">
+						<span class="title">
+							<a href="https://google.com/">Aura 8801</a>
+						</span>
+						Unidade: <span class="price">R$ 7,95</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
