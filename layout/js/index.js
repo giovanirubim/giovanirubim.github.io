@@ -1,4 +1,4 @@
-const words = await $.get('data/pt-en.json');
+const words = await $.get('data/en.json');
 const nextWord = () => {
 	const value = Math.random();
 	let index = 0;
@@ -21,7 +21,15 @@ const nextWord = () => {
 
 let currentLayout;
 
-const getMax = (arr) => arr.reduce((a, b) => Math.max(a, b));
+const getMax = (array) => array.reduce((a, b) => Math.max(a, b));
+const shuffle = (array) => {
+	for (let i=array.length; i;) {
+		const j = Math.random()*(i--)|0;
+		const aux = array[i];
+		array[i] = array[j];
+		array[j] = aux;
+	}
+};
 
 const width = 800;
 const height = 250;
@@ -30,6 +38,7 @@ const keySpacing = 16;
 const midSpace = 150;
 const nRows = 3;
 const nCols = 10;
+const nKeys = nRows*nCols;
 const spaceCol = nCols >> 1;
 const stride = keySize + keySpacing;
 const rowValues = [ 4, 15, 3 ];
@@ -53,22 +62,27 @@ const calcValue = (index) => {
 	return value/maxValue;
 };
 
-const indexes = new Array(nRows*nCols).fill(0).map((_,i) => i);
+const indexes = new Array(nKeys).fill(0).map((_,i) => i);
 const keys = [];
-const map = {
-	temperature: indexes.map((i) => 0),
+const map = window.map = {
+	temperature: indexes.map(calcValue),
 	toIndex: {},
 	toValue: indexes.map(calcValue)
 };
 
 const updateTemperature = () => {
 	const max = keys.reduce((max, key) => Math.max(max, key.count), 0);
+	if (max === 0) {
+		return;
+	}
 	map.temperature = keys.map((key) => key.count/max);
 };
 
 let lastCol = null;
 let lastHand = null;
 let sumPoints = 0;
+let colSwaps = 0;
+let handSwaps = 0;
 let totalPoints = 0;
 
 class Key {
@@ -129,9 +143,13 @@ const drawKey = ({ char, row, col, pressed }) => {
 	ctx.rect(x, y, keySize, keySize);
 	ctx.fill();
 	ctx.stroke();
+	if (!'#$%'.includes(char)) {
+		ctx.fillStyle = '#fff';
+	} else {
+		ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+	}
 	const cx = x + keySize/2;
 	const cy = y + keySize/2;
-	ctx.fillStyle = '#fff';
 	ctx.fillText(char, cx, cy);
 };
 
@@ -141,17 +159,18 @@ const drawKeyboard = () => {
 	ctx.clearRect(0, 0, width, height);
 	ctx.fillStyle = 'rgba(0, 128, 255, 0.1)';
 	ctx.fillRect(x0, y0, keyboardWidth, keyboardHeight);
-	ctx.font = keySize/2 + 'px monospace';
+	ctx.font = keySize/3 + 'px monospace';
+	// ctx.font = keySize/2 + 'px monospace';
 	keys.forEach(drawKey);
 	const cx = x0 + keyboardWidth/2;
 	const cy = y0 + keyboardHeight/2;
 	ctx.fillStyle = '#fff';
-	ctx.font = midSpace*0.3 + 'px monospace';
+	ctx.font = midSpace*0.2 + 'px monospace';
 	let points = calcPoints();
-	points = Math.max(points, 0).toFixed(1);
+	points = Math.round(Math.max(points, 0)*1000);
 	ctx.fillText(points, cx, cy);
-	// ctx.font = keySize*0.5 + 'px monospace';
-	// ctx.fillText(queue, cx, y0 + keyboardHeight + keySize);
+	ctx.font = keySize*0.5 + 'px monospace';
+	ctx.fillText(iterationCounter, cx, y0 + keyboardHeight + keySize);
 };
 
 let canvas, ctx;
@@ -170,8 +189,11 @@ let queue = ' '.repeat(40);
 let buffer = '';
 let pressed = null;
 const resetEvaluation = () => {
+	iterationCounter = 0;
 	sumPoints = 0;
 	totalPoints = 0;
+	handSwaps = 0;
+	colSwaps = 0;
 	lastCol = null;
 	lastHand = null;
 };
@@ -191,16 +213,10 @@ const iteration = () => {
 	if (key) {
 		key.press();
 		pressed = key;
-		let value = key.value*7;
-		let str = [value]
-		if (key.col !== lastCol) {
-			value += 2.5;
-		}
-		if (key.hand !== lastHand) {
-			value += 0.5;
-		}
-		totalPoints ++;
-		sumPoints += value;
+		colSwaps += key.col !== lastCol;
+		handSwaps += key.hand !== lastHand;
+		sumPoints += key.value;
+		totalPoints += 1;
 		lastCol = key.col;
 		lastHand = key.hand;
 	} else {
@@ -209,15 +225,37 @@ const iteration = () => {
 	}
 };
 
-const qwerty = window.qwerty = 'QWERTYUIOPASDFGHJKLÇZXCVBNM---';
-const colemak = window.colemak = 'QWFPGJLUY-ARSTDHNEIOZXCVBKMÇ--';
+let iterationCounter = 0;
+const iterationBatch = 101;
+const interval = 0;
+
+const qwerty = window.qwerty = 'QWERTYUIOPASDFGHJKLÇZXCVBNM#$%';
+const custom = window.custom = 'MFDW#ÇYQLUNSTAKJEOIRZXCV$%BHGP';
+const colemak = window.colemak = 'QWFPGJLUY#ARSTDHNEIOZXCVBKMÇ$%';
+const mergeLayouts = (a, b) => {
+	const maps = [a, b].map((layout) => {
+		const map = {};
+		for (let i=0; i<nKeys; ++i) {
+			const key = layout[i];
+			map[key] = i;
+			map[i] = key;
+		}
+		return map;
+	});
+	const layout = new Array(nKeys).fill(null);
+	const contains = {};
+	for (let i=0; i<nKeys; ++i) {
+		if (a[i] === b[i]) {
+			const char = a[i];
+			layout[i] = char;
+			contains[char] = true;
+		}
+	}
+};
+
 setLayout(qwerty);
 initCanvas();
 drawKeyboard();
-
-let iterationCountdown = 0;
-let doNext = null;
-const iterationBatch = 1;
 
 const frame = () => {
 	updateTemperature();
@@ -228,68 +266,15 @@ const frame = () => {
 setInterval(() => {
 	for (let i=0; i<iterationBatch; ++i) {
 		iteration();
-		if (--iterationCountdown === 0 && doNext !== null) {
-			const fn = doNext;
-			doNext = null;
-			fn();
-		}
+		++ iterationCounter;
 	}
-}, 0);
+}, interval);
 
 frame();
-
-const evalLayout = (layout, amount, callback) => {
-	setLayout(layout);
-	iterationCountdown = amount;
-	if (callback) {
-		doNext = () => {
-			callback(calcPoints());
-		};
-		return;
-	}
-	return new Promise((done) => {
-		doNext = () => {
-			done(calcPoints());
-		};
-	});
-};
 
 const log = (data) => {
 	console.log(JSON.stringify(data, null, '  '));
 };
-
-window.test1 = async () => {
-	const a = queue;
-	const val = await evalLayout(qwerty, 1);
-	const b = queue;
-	log({
-		a,
-		b,
-		val,
-		current: calcPoints(),
-	});
-};
-
-window.test2 = () => {
-	const a = queue;
-	evalLayout(qwerty, 1, (val) => {
-		const b = queue;
-		log({
-			a,
-			b,
-			val,
-			current: calcPoints(),
-		});
-	});
-};
-
-const iterate = (amount, callback) => {
-	resetEvaluation();
-	iterationCountdown = amount;
-	doNext = callback;
-};
-
-window.iterate = iterate;
 
 window.swap = (pair) => {
 	let [a, b] = pair.split('');
@@ -317,6 +302,8 @@ window.shuffle = () => {
 	setLayout(layout);
 };
 
-window.setLayout = setLayout;
+window.setLayout = (layout) => {
+	setLayout(layout);
+	drawKeyboard();
+};
 window.getKey = getKey;
-window.evalLayout = evalLayout;
