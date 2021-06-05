@@ -1,0 +1,24 @@
+[
+	{
+		"nome": "3M 8801 (concha)",
+		"fabricante": "3M",
+		"modelo": "9320",
+		"loja_fisica": false,
+		"loja_online": true,
+		"link": "https://www.baeletrica.com.br/respirador-descartavel-concha-pff2",
+		"valor_unitario": 7.75,
+		"frete": "por CEP",
+		"loja": "BA Elétrica"
+	},
+	{
+		"nome": "Delta Plus Pro Agro",
+		"fabricante": "Delta Plus",
+		"modelo": "Pro Agro",
+		"loja_fisica": true,
+		"loja_online": true,
+		"link": "https://www.bemolfarma.com.br/mascara-pff2-sem-valvula-delta-p1051116",
+		"valor_unitario": 5.90,
+		"frete": "por CEP",
+		"loja": "Bemol Farma"
+	}
+]

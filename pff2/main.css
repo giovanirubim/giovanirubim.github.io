@@ -71,3 +71,12 @@ body {
 
 #results .header .price {
 }
+
+table tr,
+table td {
+	font-size: 16px;
+}
+
+th, td {
+	padding: 3px 7px;
+}
