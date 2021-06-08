@@ -7,16 +7,28 @@
 	<script type="module" src="edit.js"></script>
 	<style type="text/css">
 		* {
-			font-family: monospace	;
+			font-family: monospace;
+		}
+		body {
+			background-color: #eee;
 		}
 		textarea {
 			width: 400px;
 			height: 200px;
 		}
+		#view {
+			padding: 20px;
+			box-shadow: -5px 5px 10px #aaa;
+			margin-bottom: 20px;
+			background-color: #fff;
+			width: 440px;
+		}
 	</style>
 </head>
 	<body>
-		<div>Número: <input type="number" id="index"></div>
+		<div>
+			Número: <input type="number" id="index" min="1"> (total: <span id="total"></span>)
+		</div>
 		<div>
 			<div>Dados:</div>
 			<textarea id="data"></textarea>

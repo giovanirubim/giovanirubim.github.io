@@ -1,4 +1,5 @@
 import * as Popup from './pop-up.js';
+import format from './format.js';
 
 const ofertas = await $.get('ofertas.json');
 ofertas.forEach((oferta, index) => oferta.index = index);
@@ -22,8 +23,8 @@ const fillTable = (rows) => {
 		html += `<td>${row.nome}</td>`
 		html += `<td>${row.modelo}</td>`
 		html += `<td>${formatPrice(row.valor_unitario)}</td>`
-		html += `<td>${row.loja_fisica? 'Sim': 'Não'}</td>`
-		html += `<td>${row.loja_online? 'Sim': 'Não'}</td>`
+		html += `<td>${/^s/i.test(row.loja_fisica)? 'Sim': 'Não'}</td>`
+		html += `<td>${/^s/i.test(row.loja_online)? 'Sim': 'Não'}</td>`
 		html += `<td>${row.frete}</td>`
 		html += `<td>${row.zona}</td>`
 		html += '</tr>';
@@ -94,7 +95,7 @@ $(document).ready(function(){
 		Popup.open();
 		const div = $(document.createElement('div'))
 			.addClass('text-info');
-		div[0].innerText = e.altKey ? 'Número: ' + oferta.index : oferta.info;
+		div[0].innerHTML = format(e.altKey ? 'Número: ' + oferta.index : oferta.info);
 		Popup.setContent(div);
 	});
 });
