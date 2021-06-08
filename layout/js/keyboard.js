@@ -44,20 +44,20 @@ const fn = {
 	endSin2: (x) => fn.endSin(fn.endSin(x)),
 	sine: (x) => Math.cos((x + 1)*Math.PI)/2 + 0.5,
 };
-const duration = 500;
+const mul = 0;
 const keyAnimation = ({ col, row }) => {
 	const delta = new Date() - initT;
 	const dir = normalize(col - midPosition);
 	const midProximity = 1 - calcMidDist(col)/maxMidDist;
-	const delay = midProximity*500;
+	const delay = midProximity*500*mul;
 	let y = y0 + row*stride;
 	let x = x0 + col*stride;
 	if (col >= spaceCol) {
 		x += midSpace - keySpacing;
 	}
-	x = getTimeValue(delta, delay, 650, x - 150*dir, x, fn.endSin2);
-	const borderOpacity = getTimeValue(delta, delay + 200, 500);
-	const colorOpacity = getTimeValue(delta, 1000, 1750, 0, 1, fn.sine);
+	x = getTimeValue(delta, delay, 650*mul, x - 150*dir, x, fn.endSin2);
+	const borderOpacity = getTimeValue(delta, delay + 200*mul, 500*mul);
+	const colorOpacity = getTimeValue(delta, 1000*mul, 1750*mul, 0, 1, fn.sine);
 	return {
 		x, y,
 		borderOpacity,
@@ -97,7 +97,7 @@ const drawKey = (key) => {
 		ctx.beginPath();
 		ctx.lineWidth = 4;
 		ctx.rect(x - shift, y - shift, size, size);
-		ctx.strokeStyle = `rgba(0, 192, 255, ${Math.pow(key.highlight, 0.5)})`;
+		ctx.strokeStyle = `rgba(0, 192, 255, ${key.highlight})`;
 		ctx.stroke();
 	}
 };
