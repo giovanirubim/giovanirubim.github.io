@@ -44,7 +44,7 @@ const fn = {
 	endSin2: (x) => fn.endSin(fn.endSin(x)),
 	sine: (x) => Math.cos((x + 1)*Math.PI)/2 + 0.5,
 };
-const mul = 0;
+const mul = 1;
 const keyAnimation = ({ col, row }) => {
 	const delta = new Date() - initT;
 	const dir = normalize(col - midPosition);
@@ -65,9 +65,11 @@ const keyAnimation = ({ col, row }) => {
 	};
 };
 
+const isLetter = /^[a-zç]$/i;
+
 const drawKey = (key) => {
 	ctx.lineWidth = 1;
-	const { char, pressed, value, highlight } = key;
+	const { upcase, pressed, temperature, value, highlight } = key;
 	const {
 		x, y,
 		borderOpacity,
@@ -77,22 +79,26 @@ const drawKey = (key) => {
 	if (pressed) {
 		ctx.fillStyle = `rgba(0, 255, 192, ${0.75*colorOpacity})`;
 	} else {
-		ctx.fillStyle = `rgba(255, 64, 0, ${value*colorOpacity})`;
+		ctx.fillStyle = `rgba(255, 64, 0, ${temperature*colorOpacity})`;
 	}
 	ctx.beginPath();
+	key.renderData.x = x;
+	key.renderData.y = y;
+	key.renderData.width = keySize;
+	key.renderData.height = keySize;
 	ctx.rect(x, y, keySize, keySize);
 	ctx.fill();
 	ctx.stroke();
-	if (!'#$%'.includes(char)) {
+	if (isLetter.test(upcase)) {
 		ctx.fillStyle = `rgba(255, 255, 255, ${1*borderOpacity})`;
 	} else {
 		ctx.fillStyle = `rgba(255, 255, 255, ${0.2*borderOpacity})`;
 	}
 	const cx = x + keySize/2;
 	const cy = y + keySize/2;
-	ctx.fillText(char, cx, cy);
+	ctx.fillText(upcase, cx, cy);
 	if (key.highlight !== 0) {
-		const shift = 0;
+		const shift = 2;
 		const size = keySize + shift*2;
 		ctx.beginPath();
 		ctx.lineWidth = 4;

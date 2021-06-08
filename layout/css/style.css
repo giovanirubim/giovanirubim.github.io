@@ -5,3 +5,10 @@ body {
 canvas {
 	margin-top: 200px;
 }
+#info {
+	font-family: monospace;
+	color: #777;
+	text-align: left;
+	width: 680px;
+	margin: 0px auto;
+}
