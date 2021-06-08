@@ -1,7 +1,7 @@
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
-const port = 8080;
+const port = process.argv[2] ?? 8080;
 const root = __dirname;
 const mimeMap = {
 	'html': 'text/html',

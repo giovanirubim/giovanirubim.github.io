@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<script type="text/javascript" src="jquery-3.6.0.min.js"></script>
+	<script type="module" src="edit.js"></script>
+	<style type="text/css">
+		* {
+			font-family: monospace	;
+		}
+		textarea {
+			width: 400px;
+			height: 200px;
+		}
+	</style>
+</head>
+	<body>
+		<div>Número: <input type="number" id="index"></div>
+		<div>
+			<div>Dados:</div>
+			<textarea id="data"></textarea>
+		</div>
+		<div>
+			<div>Texto:</div>
+			<textarea id="info"></textarea>
+		</div>
+		Preview
+		<div id="view"></div>
+		<input type="button" value="delete" id="delete">
+		<input type="button" value="update" id="update">
+		<input type="button" value="add" id="add">
+	</body>
+</html>

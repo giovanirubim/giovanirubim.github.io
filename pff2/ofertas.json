@@ -1,0 +1,28 @@
+[
+	{
+		"nome": "3M 8801 (concha)",
+		"fabricante": "3M",
+		"modelo": "9320",
+		"loja_fisica": false,
+		"loja_online": true,
+		"link": "https://www.baeletrica.com.br/respirador-descartavel-concha-pff2",
+		"valor_unitario": 7.75,
+		"frete": "por CEP",
+		"loja": "BA Elétrica",
+		"zona": "Centro-Oeste",
+		"info": "\ud83c\udfea FEMABRA (atualizado em: 07/06/2021)\n\ud83d\udccd Rod. BR-316 Km 08 \u2013 Rua Jo\u00e3o Canuto n\u00ba. 195 - Centro, Ananindeua;\n\ud83d\udcde (91) 9 9214-4970 (WhatsApp). Ap\u00f3s contato inicial com este n\u00famero, a loja provavelmente te repassar\u00e1 a um revendedor autorizado para concluir a compra - tudo feito por WhatsApp;\n\ud83d\ude9a Frete para Bel\u00e9m a partir de R$ 150,00 em compras; fazendo o pedido at\u00e9 \u00e0s 11h da manh\u00e3, \u00e9 enviado no mesmo dia;\n\ud83d\udea8 Pre\u00e7o de atacado a partir de 10 unidades; A loja vem praticando o mesmo valor para compras no varejo e atacado, independentemente da quantidade;\n\ud83d\udcb3 Aceitam Pix, cart\u00e3o de cr\u00e9dito e d\u00e9bito;\n\ud83d\ude37 PFF2 Ledan 2302 (azul) - R$ 2,00;\n\ud83d\ude37 PFF2 KSN 10.02CO (cinza - c/ carv\u00e3o ativado) - R$ 6,20;"
+	},
+	{
+		"nome": "Delta Plus Pro Agro",
+		"fabricante": "Delta Plus",
+		"modelo": "Pro Agro",
+		"loja_fisica": true,
+		"loja_online": true,
+		"link": "https://www.bemolfarma.com.br/mascara-pff2-sem-valvula-delta-p1051116",
+		"valor_unitario": 5.90,
+		"frete": "por CEP",
+		"loja": "Bemol Farma",
+		"zona": "Norte",
+		"info": "uhaeuheau"
+	}
+]
