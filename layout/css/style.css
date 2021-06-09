@@ -14,10 +14,10 @@ canvas {
 	margin-right: auto;
 }
 #info {
-	margin: 0px auto;
+	height: 50px;
 }
 #panel {
-	margin-top: 50px;
+	margin-top: 45px;
 }
 #panel > div {
 	margin-bottom: 10px;

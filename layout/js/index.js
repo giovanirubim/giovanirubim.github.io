@@ -37,6 +37,7 @@ const setLayout = (layout) => {
 	keyArray.forEach((key) => key.setPosition(toIndex[key.char]));
 };
 
+const isLetterRegex = /^[a-zç]$/i;
 class Key {
 	constructor(char, position) {
 		this.char = char;
@@ -51,7 +52,7 @@ class Key {
 			width: null,
 			height: null,
 		};
-		this.isLetter = /^[a-zç]$/i.test(char);
+		this.isLetter = isLetterRegex.test(char);
 	}
 	setPosition(position) {
 		this.position = position;
@@ -199,6 +200,20 @@ const init = async () => {
 		setLayout(layouts[layout]);
 		showKeyboardInfo();
 	});
+	window.onkeydown = (e) => {
+		const char = e.key.toLowerCase();
+		if (isLetterRegex.test(char)) {
+			const key = keyMap[char];
+			key.pressed = true;
+		}
+	};
+	window.onkeyup = (e) => {
+		const char = e.key.toLowerCase();
+		if (isLetterRegex.test(char)) {
+			const key = keyMap[char];
+			key.pressed = false;
+		}
+	};
 };
 
 init();
