@@ -5,10 +5,12 @@ import Chars from './chars.js';
 const getMax = (array) => array.reduce((a, b) => Math.max(a, b));
 
 const layouts = {
+	asset: 'qwjfgypulçasetdhniorzxcvbkm<>;',
+	colemak: 'qwfpgjluyçarstdhneiozxcvbkm<>;',
+	custom: 'mfdw;çybulnstakjeoirzxcv<>qhpg',
 	qwerty: 'qwertyuiopasdfghjklçzxcvbnm<>;',
-	colemak: 'qwfpgjluy<arstdhneiozxcvbkmç>;',
-	workman: 'dqrwbjfup;ashtgyneoizxmcvkl<>ç',
-	custom: 'mfdw<çybulnstakjeoirzxcv>;qhpg',
+	workman: 'dqrwbjfupçashtgyneoizxmcvkl<>;',
+	dvorak: 'ç<>pyfgcrlaoeuidhtns;qjkxbmwvz',
 };
 
 const keyArray = window.keyArray = [];
@@ -107,8 +109,8 @@ const calcHeatmapValue = () => {
 
 const showKeyboardInfo = () => {
 	$('#info').html(`
-		Column repetition: ${ calcColumnRepetition() }<br>
 		Heatmap value: ${ calcHeatmapValue() }<br>
+		Column repetition: ${ calcColumnRepetition() }<br>
 	`);
 };
 
