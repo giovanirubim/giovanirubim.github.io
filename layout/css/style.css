@@ -5,10 +5,34 @@ body {
 canvas {
 	margin-top: 200px;
 }
-#info {
+#info, #panel {
 	font-family: monospace;
 	color: #777;
 	text-align: left;
 	width: 680px;
+	margin-left: auto;
+	margin-right: auto;
+}
+#info {
 	margin: 0px auto;
+}
+#panel {
+	margin-top: 50px;
+}
+#panel > div {
+	margin-bottom: 10px;
+}
+#panel input[type="button"] {
+	background-color: #fff;
+	border: none;
+	border-radius: 2px;
+	height: 24px;
+	width: 75px;
+	background-color: #444;
+	color: #aaa;
+	cursor: pointer;
+}
+#panel input[type="button"].selected {
+	background-color: #aaa;
+	color: #444;
 }

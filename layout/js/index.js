@@ -6,8 +6,9 @@ const getMax = (array) => array.reduce((a, b) => Math.max(a, b));
 
 const layouts = {
 	qwerty: 'qwertyuiopasdfghjklçzxcvbnm<>;',
-	custom: 'mfdw<çybulnstakjeoirzxcv>;qhpg',
 	colemak: 'qwfpgjluy<arstdhneiozxcvbkmç>;',
+	workman: 'dqrwbjfup;ashtgyneoizxmcvkl<>ç',
+	custom: 'mfdw<çybulnstakjeoirzxcv>;qhpg',
 };
 
 const keyArray = window.keyArray = [];
@@ -120,8 +121,10 @@ const showKeyInfo = (key) => {
 
 const init = async () => {
 	await Data.load();
-	Data.setMode('en-pt');
+	Data.setMode($('#panel [name="lang"].selected').attr('value'));
 	initKeys();
+	const selectedLayout = $('#panel [name="layout"].selected').attr('value')
+	setLayout(layouts[selectedLayout]);
 	const canvas = document.querySelector('canvas');
 	Keyboard.setCanvas(canvas);
 	Keyboard.startRender(keyArray);
@@ -166,6 +169,22 @@ const init = async () => {
 		showKeyInfo(key);
 	});
 	showKeyboardInfo();
+	$('#panel').on('click', '[name="lang"]', function() {
+		const button = $(this);
+		const lang = button.attr('value');
+		$('#panel [name="lang"].selected').removeClass('selected');
+		button.addClass('selected');
+		Data.setMode(lang);
+		showKeyboardInfo();
+	});
+	$('#panel').on('click', '[name="layout"]', function() {
+		const button = $(this);
+		const layout = button.attr('value');
+		$('#panel [name="layout"].selected').removeClass('selected');
+		button.addClass('selected');
+		setLayout(layouts[layout]);
+		showKeyboardInfo();
+	});
 };
 
 init();
