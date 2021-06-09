@@ -115,8 +115,11 @@ const calcHandBalance = () => {
 	let sum = 0;
 	keyArray.forEach((key) => sum += key.frequency*(key.hand === 'R'));
 	const unbalance = Math.abs(sum - 0.5)*2;
-	const balance = 1 - unbalance;
-	return (balance*100).toPrecision(3)*1 + '%';
+	const balance = ((1 - unbalance)*100).toPrecision(3)*1;
+	if (balance === 100) {
+		return '100%';
+	}
+	return `${balance}% (${sum > 0.5? 'right': 'left'})`;
 };
 
 const showKeyboardInfo = () => {
