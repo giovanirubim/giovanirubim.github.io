@@ -1,4 +1,4 @@
-const fs = require('fs');
+const file = require('./file');
 
 const formatWord = (word) => `^${
 	word
@@ -37,8 +37,7 @@ const mapsEntries = langs.map((lang) => {
 			next: createMap(),
 		};
 	});
-	const pathname = `../sources/word-frequency-${lang}.txt`;
-	fs.readFileSync(pathname)
+	file.read(`word-frequency-${lang}.txt`)
 		.toString('utf8')
 		.trim()
 		.split(/\s*\n\s*/)
@@ -54,7 +53,7 @@ const mapsEntries = langs.map((lang) => {
 				map[a].next[b] += amount;
 			}
 		});
-	const merge = true;
+	const merge = false;
 	for (let a in map) {
 		const dirmap = map[a];
 		const merged = {};
@@ -87,4 +86,4 @@ const mapsEntries = langs.map((lang) => {
 
 const maps = Object.fromEntries(mapsEntries);
 const json = JSON.stringify(maps, null, '\t');
-fs.writeFileSync('../outputs/near-frequency.json', json);
+file.write('near-frequency.json', json);

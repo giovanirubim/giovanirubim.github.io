@@ -2,17 +2,36 @@ import Chars from './chars.js';
 
 const langs = ['en', 'pt'];
 const all = langs.join('-');
-const createSet = () => {
+
+export const modes = langs.concat(all);
+
+const createLangMap = (fill) => {
 	const entries = langs
-	.concat(all)
-	.map((name) => [name, {}]);
+		.concat(all)
+		.map((name) => [name, fill()]);
 	return Object.fromEntries(entries);
 };
+const createKeyMap = (fill) => Object.fromEntries(
+	Chars.low.all
+		.split('')
+		.map((char) => [char, fill()])
+);
+const createDirMap = (fill) => ({
+	prev: fill(),
+	next: fill(),
+	average: fill(),
+});
 
 let currentMode = all;
 
-const letterFrequency = createSet();
-const nearFrequency = createSet();
+const letterFrequency = createLangMap(() => ({}));
+const nearFrequency = createLangMap(
+	() => createKeyMap(
+		() => createDirMap(
+			() => createKeyMap(() => 0)
+		)
+	)
+);
 const temperatureMultiplier = Object.fromEntries(
 	langs.concat(all)
 		.map((lang) => [lang, 0])
@@ -40,27 +59,29 @@ const mergeLetterFrequency = (array) => {
 
 const mergeNearFrequency = (object) => {
 	const chars = Chars.low.letters.split('');
-	const common = {};
+	const dirs = ['prev', 'next'];
 	for (let lang of langs) {
 		for (let a of chars) {
-			if (common[a] === undefined) {
-				common[a] = Object.fromEntries(chars.map((char) => [char, 0]));
+			for (let dir of dirs) {
+				for (let b of chars) {
+					const value = object[lang][a][dir][b];
+					nearFrequency[lang][a][dir][b] = value;
+					nearFrequency[lang][a].average[b] += value / dirs.length;
+				}
 			}
-			const map = {};
-			for (let b of chars) {
-				const value = object[lang][a][b];
-				map[b] = value;
-				common[a][b] += value;
-			}
-			nearFrequency[lang][a] = map;
 		}
 	}
-	for (let a of chars) {
-		for (let b of chars) {
-			common[a][b] /= langs.length;
+	dirs.push('average');
+	for (let lang of langs) {
+		for (let a of chars) {
+			for (let dir of dirs) {
+				for (let b of chars) {
+					const value = nearFrequency[lang][a][dir][b];
+					nearFrequency[all][a][dir][b] += value / langs.length;
+				}
+			}
 		}
 	}
-	nearFrequency[all] = common;
 };
 
 const init = async () => {
@@ -74,13 +95,19 @@ export const load = async () => await loadPromise;
 
 export const setMode = (mode) => currentMode = mode;
 
-export const getTemperature = (char) => {
+export const getFrequency = (char) => {
 	const value = letterFrequency[currentMode][char] ?? 0;
 	return value*temperatureMultiplier[currentMode];
 };
 
 export const getNearValue = (from, to) => {
-	return nearFrequency[currentMode][from][to] ?? 0;
+	return nearFrequency[currentMode][from].average[to] ?? 0;
+};
+export const getNextFrequency = (from, to) => {
+	return nearFrequency[currentMode][from].next[to] ?? 0;
+};
+export const getPrevFrequency = (from, to) => {
+	return nearFrequency[currentMode][from].prev[to] ?? 0;
 };
 
 export const ready = (callback) => {

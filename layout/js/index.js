@@ -4,9 +4,11 @@ import Chars from './chars.js';
 
 const getMax = (array) => array.reduce((a, b) => Math.max(a, b));
 
-const qwerty = 'qwertyuiopasdfghjklçzxcvbnm<>;';
-const custom = 'mfdw<çybulnstakjeoirzxcv>;qhpg';
-const colemak = 'qwfpgjluy<arstdhneiozxcvbkmç>;';
+const layouts = {
+	qwerty: 'qwertyuiopasdfghjklçzxcvbnm<>;',
+	custom: 'mfdw<çybulnstakjeoirzxcv>;qhpg',
+	colemak: 'qwfpgjluy<arstdhneiozxcvbkmç>;',
+};
 
 const keyArray = window.keyArray = [];
 const keyMap = {};
@@ -23,6 +25,14 @@ const values = rowValues
 	)
 	.flat()
 	.map((value) => value / maxValue);
+
+const setLayout = (layout) => {
+	const toIndex = {};
+	for (let i=0; i<numberOfKeys; ++i) {
+		toIndex[layout[i]] = i;
+	}
+	keyArray.forEach((key) => key.setPosition(toIndex[key.char]));
+};
 
 class Key {
 	constructor(char, position) {
@@ -57,17 +67,55 @@ class Key {
 		return values[this.position];
 	}
 	get temperature() {
-		return Data.getTemperature(this.char);
+		return Data.getFrequency(this.char);
 	}
 }
 
 const initKeys = () => {
 	for (let i=0; i<numberOfKeys; ++i) {
-		keyArray.push(new Key(qwerty[i], i));
+		keyArray.push(new Key(Chars.low.all[i], i));
 	}
 	keyArray.forEach((key) => {
 		keyMap[key.char] = key;
 	});
+};
+
+const calcColumnRepetition = () => {
+	let sum = 0;
+	const array = Chars.low.letters;
+	for (let key of array) {
+		const keyCol = keyMap[key].col;
+		const keyFrequency = Data.getFrequency(key);
+		for (let next of array) {
+			const nextCol = keyMap[next].col;
+			if (nextCol !== keyCol) {
+				continue;
+			}
+			const nextFrequency = Data.getNextFrequency(key, next);
+			sum += keyFrequency * nextFrequency;
+		}
+	}
+	return (sum*100).toPrecision(2)*1 + '%';
+};
+
+const calcHeatmapValue = () => {
+	let sum = 0;
+	keyArray.forEach((key) => sum += key.temperature*key.value);
+	return (sum*100).toPrecision(2)*1;
+};
+
+const showKeyboardInfo = () => {
+	$('#info').html(`
+		Column repetition: ${ calcColumnRepetition() }<br>
+		Heatmap value: ${ calcHeatmapValue() }<br>
+	`);
+};
+
+const showKeyInfo = (key) => {
+	$('#info').html(`
+		Letter temperature: ${ key.temperature.toPrecision(2)*1 }<br>
+		Position value: ${ key.value.toPrecision(2)*1 }<br>
+	`);
 };
 
 const init = async () => {
@@ -77,10 +125,11 @@ const init = async () => {
 	const canvas = document.querySelector('canvas');
 	Keyboard.setCanvas(canvas);
 	Keyboard.startRender(keyArray);
+	let lastKeyHover = null;
 	$(canvas).on('mousemove', (e) => {
 		const x = e.offsetX;
 		const y = e.offsetY;
-		const key = keyArray.find(({ renderData }) => {
+		let key = keyArray.find(({ renderData }) => {
 			if (renderData.x > x) {
 				return false;
 			}
@@ -95,9 +144,16 @@ const init = async () => {
 			}
 			return true;
 		});
+		if (!key || key && !key.isLetter) {
+			key = null;
+		}
+		if (key === lastKeyHover) {
+			return;
+		}
+		lastKeyHover = key;
 		keyArray.forEach((key) => key.highlight = 0);
 		if (key == null || !key.isLetter) {
-			$('#info').html('');
+			showKeyboardInfo();
 			return;
 		}
 		const { char } = key;
@@ -107,11 +163,9 @@ const init = async () => {
 			}
 			key.highlight = Math.pow(Data.getNearValue(char, key.char), 0.35);
 		});
-		$('#info').html(`
-			Letter temperature: ${ key.temperature.toPrecision(2)*1 } <br>
-			Position value: ${ key.value.toPrecision(2)*1 }
-		`);
+		showKeyInfo(key);
 	});
+	showKeyboardInfo();
 };
 
 init();
