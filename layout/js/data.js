@@ -95,9 +95,12 @@ export const load = async () => await loadPromise;
 
 export const setMode = (mode) => currentMode = mode;
 
+export const getTemperature = (char) => {
+	return getFrequency(char)*temperatureMultiplier[currentMode];
+};
+
 export const getFrequency = (char) => {
-	const value = letterFrequency[currentMode][char] ?? 0;
-	return value*temperatureMultiplier[currentMode];
+	return letterFrequency[currentMode][char] ?? 0;
 };
 
 export const getNearValue = (from, to) => {

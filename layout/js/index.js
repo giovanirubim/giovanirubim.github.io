@@ -70,6 +70,9 @@ class Key {
 		return values[this.position];
 	}
 	get temperature() {
+		return Data.getTemperature(this.char);
+	}
+	get frequency() {
 		return Data.getFrequency(this.char);
 	}
 }
@@ -103,14 +106,23 @@ const calcColumnRepetition = () => {
 
 const calcHeatmapValue = () => {
 	let sum = 0;
-	keyArray.forEach((key) => sum += key.temperature*key.value);
-	return (sum*100).toPrecision(2)*1;
+	keyArray.forEach((key) => sum += key.frequency*key.value);
+	return (sum*100).toPrecision(3)*1;
+};
+
+const calcHandBalance = () => {
+	let sum = 0;
+	keyArray.forEach((key) => sum += key.frequency*(key.hand === 'R'));
+	const unbalance = Math.abs(sum - 0.5)*2;
+	const balance = 1 - unbalance;
+	return (balance*100).toPrecision(3)*1 + '%';
 };
 
 const showKeyboardInfo = () => {
 	$('#info').html(`
 		Heatmap value: ${ calcHeatmapValue() }<br>
 		Column repetition: ${ calcColumnRepetition() }<br>
+		Hand balance: ${ calcHandBalance() }<br>
 	`);
 };
 
