@@ -139,8 +139,23 @@ const showKeyInfo = (key) => {
 };
 
 let currentText = '';
+const maxWidth = 30;
 const updateText = () => {
-	$('#textbox').text(currentText);
+	currentText = currentText.replace(/\x20+/g, '_');
+	const words = currentText.split('_');
+	let text = words[0];
+	let line = text.length;
+	for (let i=1; i<words.length; ++i) {
+		const word = words[i];
+		if (line + 1 + word.length <= maxWidth) {
+			text += '_' + word;
+			line += word.length + 1;
+		} else {
+			text += '\n' + word;
+			line = word.length;
+		}
+	}
+	$('#textbox').text(text);
 };
 
 const getPressedKey = (pressed) => {

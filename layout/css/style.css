@@ -34,10 +34,14 @@ body {
 	color: #444;
 }
 #textbox {
+	--padding-x: 12px;
+	--padding-y: 10px;
+	padding: var(--padding-y) var(--padding-x);
 	background-color: #444;
-	width: 400px;
-	height: 150px;
+	width: calc(400px - var(--padding-x)*2);
+	height: calc(150px - var(--padding-y)*2);
 	margin: 50px auto 0px auto;
 	font-family: monospace;
+	text-align: left;
 	color: #ccc;
 }
