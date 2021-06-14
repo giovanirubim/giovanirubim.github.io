@@ -35,6 +35,7 @@ const setLayout = (layout) => {
 		toIndex[layout[i]] = i;
 	}
 	keyArray.forEach((key) => key.setPosition(toIndex[key.char]));
+	keyArray.sort((a, b) => a.position - b.position);
 };
 
 const isLetterRegex = /^[a-zç]$/i;
@@ -137,6 +138,11 @@ const showKeyInfo = (key) => {
 	`);
 };
 
+let current_text = '';
+const updateText = () => {
+	$('#textbox').text(current_text);
+};
+
 const init = async () => {
 	await Data.load();
 	Data.setMode($('#panel [name="lang"].selected').attr('value'));
@@ -204,10 +210,14 @@ const init = async () => {
 		showKeyboardInfo();
 	});
 	window.onkeydown = (e) => {
-		const char = e.key.toLowerCase();
-		if (isLetterRegex.test(char)) {
-			const key = keyMap[char];
+		const low = e.key.toLowerCase();
+		if (isLetterRegex.test(low)) {
+			const key = keyMap[low];
 			key.pressed = true;
+		}
+		if (low === 'backspace') {
+			current_text = current_text.substr(0, current_text.length - 1);
+			updateText();
 		}
 	};
 	window.onkeyup = (e) => {
@@ -216,6 +226,19 @@ const init = async () => {
 			const key = keyMap[char];
 			key.pressed = false;
 		}
+	};
+	window.onkeypress = (e) => {
+		if (e.ctrlKey || e.altKey) {
+			return;
+		}
+		const { key } = e;
+		const low = key.toLowerCase();
+		if (key === ' ') {
+			current_text += '_'
+		} else if (keyMap[low]) {
+			current_text += key;
+		}
+		updateText();
 	};
 };
 
