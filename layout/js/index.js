@@ -138,9 +138,9 @@ const showKeyInfo = (key) => {
 	`);
 };
 
-let current_text = '';
+let currentText = '';
 const updateText = () => {
-	$('#textbox').text(current_text);
+	$('#textbox').text(currentText);
 };
 
 const getPressedKey = (pressed) => {
@@ -204,7 +204,7 @@ const init = async () => {
 			if (char === key.char) {
 				return;
 			}
-			key.highlight = Math.pow(Data.getNearValue(char, key.char), 0.35);
+			key.highlight = Math.pow(Data.getNearValue(char, key.char), 0.5);
 		});
 		showKeyInfo(key);
 	});
@@ -232,9 +232,9 @@ const init = async () => {
 		}
 		if (e.key.toLowerCase() === 'backspace') {
 			if (e.ctrlKey) {
-				current_text = current_text.replace(/(_?[a-zç]+_?|_)$/i, '');
+				currentText = currentText.replace(/(_?[a-zç]+_?|_)$/i, '');
 			} else {
-				current_text = current_text.replace(/.$/, '');
+				currentText = currentText.replace(/.$/, '');
 			}
 			updateText();
 		}
@@ -251,10 +251,9 @@ const init = async () => {
 		}
 		const { key, input } = getPressedKey(e.key);
 		if (e.key === ' ') {
-			current_text = '';
-			// current_text += '_'
+			currentText += '_'
 		} else if (key) {
-			current_text += input;
+			currentText += input;
 		}
 		updateText();
 	};
