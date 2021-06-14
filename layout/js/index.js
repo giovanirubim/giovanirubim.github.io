@@ -5,12 +5,12 @@ import Chars from './chars.js';
 const getMax = (array) => array.reduce((a, b) => Math.max(a, b));
 
 const layouts = {
-	asset: 'qwjfgypulçasetdhniorzxcvbkm<>;',
-	colemak: 'qwfpgjluyçarstdhneiozxcvbkm<>;',
-	custom: 'mfdw;çybulnstakjeoirzxcv<>qhpg',
-	qwerty: 'qwertyuiopasdfghjklçzxcvbnm<>;',
-	workman: 'dqrwbjfupçashtgyneoizxmcvkl<>;',
-	dvorak: 'ç<>pyfgcrlaoeuidhtns;qjkxbmwvz',
+	asset: 'qwjfgypulçasetdhniorzxcvbkm,.;',
+	colemak: 'qwfpgjluyçarstdhneiozxcvbkm,.;',
+	custom: 'mfdw;çybulnstakjeoirzxcv,.qhpg',
+	qwerty: 'qwertyuiopasdfghjklçzxcvbnm,.;',
+	workman: 'dqrwbjfupçashtgyneoizxmcvkl,.;',
+	dvorak: 'ç,.pyfgcrlaoeuidhtns;qjkxbmwvz',
 };
 
 const keyArray = window.keyArray = [];
@@ -143,6 +143,22 @@ const updateText = () => {
 	$('#textbox').text(current_text);
 };
 
+const getPressedKey = (pressed) => {
+	if (pressed.length !== 1) {
+		return { key: null, input: null };
+	}
+	const lower = pressed.toLowerCase();
+	const index = layouts.qwerty.indexOf(lower);
+	if (index === -1) {
+		return { key: null, input: null };
+	}
+	const key = keyArray[index];
+	return {
+		key,
+		input: pressed === lower? key.char: key.upcase
+	};
+};
+
 const init = async () => {
 	await Data.load();
 	Data.setMode($('#panel [name="lang"].selected').attr('value'));
@@ -210,20 +226,22 @@ const init = async () => {
 		showKeyboardInfo();
 	});
 	window.onkeydown = (e) => {
-		const low = e.key.toLowerCase();
-		if (isLetterRegex.test(low)) {
-			const key = keyMap[low];
+		const { key } = getPressedKey(e.key);
+		if (key) {
 			key.pressed = true;
 		}
-		if (low === 'backspace') {
-			current_text = current_text.substr(0, current_text.length - 1);
+		if (e.key.toLowerCase() === 'backspace') {
+			if (e.ctrlKey) {
+				current_text = current_text.replace(/(_?[a-zç]+_?|_)$/i, '');
+			} else {
+				current_text = current_text.replace(/.$/, '');
+			}
 			updateText();
 		}
 	};
 	window.onkeyup = (e) => {
-		const char = e.key.toLowerCase();
-		if (isLetterRegex.test(char)) {
-			const key = keyMap[char];
+		const { key } = getPressedKey(e.key);
+		if (key) {
 			key.pressed = false;
 		}
 	};
@@ -231,12 +249,12 @@ const init = async () => {
 		if (e.ctrlKey || e.altKey) {
 			return;
 		}
-		const { key } = e;
-		const low = key.toLowerCase();
-		if (key === ' ') {
-			current_text += '_'
-		} else if (keyMap[low]) {
-			current_text += key;
+		const { key, input } = getPressedKey(e.key);
+		if (e.key === ' ') {
+			current_text = '';
+			// current_text += '_'
+		} else if (key) {
+			current_text += input;
 		}
 		updateText();
 	};
