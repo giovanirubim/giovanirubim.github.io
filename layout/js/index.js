@@ -7,7 +7,8 @@ const getMax = (array) => array.reduce((a, b) => Math.max(a, b));
 const layouts = {
 	asset: 'qwjfgypulçasetdhniorzxcvbkm,.;',
 	colemak: 'qwfpgjluyçarstdhneiozxcvbkm,.;',
-	custom: 'mfdw;çybulnstakjeoirzxcv,.qhpg',
+	'custom-1': 'mfdw;çybulnstakjeoirzxcv,.qhpg',
+	'custom-2': 'çpduxvyqglintahceosr.bm;zj,kfw',
 	qwerty: 'qwertyuiopasdfghjklçzxcvbnm,.;',
 	workman: 'dqrwbjfupçashtgyneoizxmcvkl,.;',
 	dvorak: 'ç,.pyfgcrlaoeuidhtns;qjkxbmwvz',
@@ -20,7 +21,7 @@ const nCols = 10;
 const spaceCol = (nCols >> 1);
 const numberOfKeys = nRows*nCols;
 const rowValues = [ 4, 15, 3 ];
-const colValues = [ 6, 6, 9, 9, 1, 1, 9, 9, 6, 6 ];
+const colValues = [ 6, 6, 9, 9.5, 0, 0, 9.5, 9, 6, 6 ];
 const maxValue = getMax(rowValues)*getMax(colValues);
 const values = rowValues
 	.map((rowValue) => colValues
@@ -28,6 +29,46 @@ const values = rowValues
 	)
 	.flat()
 	.map((value) => value / maxValue);
+
+let lastImprovement = new Date();
+const maxTime = 5000;
+const tryToImprove = () => {
+	const currentFitness = calcFitness();
+	const chars = keyArray.map((key) => key.char);
+	const currentLayout = chars.join('');
+	let swaps = Math.random()*2 + 1 | 0;
+	while (swaps--) {
+		let i = Math.random()*numberOfKeys | 0;
+		let j = Math.random()*numberOfKeys | 0;
+		const aux = chars[i];
+		chars[i] = chars[j];
+		chars[j] = aux;
+	}
+	const newLayout = chars.join('');
+	setLayout(newLayout);
+	const newFitness = calcFitness();
+	if (newFitness <= currentFitness) {
+		setLayout(currentLayout);
+		if (new Date() - lastImprovement >= maxTime) {
+			store()
+			shuffle();
+		}
+	} else {
+		console.clear()
+		console.log(newFitness.toPrecision(4)*1);
+		lastImprovement = new Date();
+		showKeyboardInfo();
+	}
+};
+
+const gen = 250;
+window.train = () => {
+	setInterval(() => {
+		for (let i=gen; i--;) {
+			tryToImprove();
+		}
+	}, 0);
+};
 
 const setLayout = (layout) => {
 	const toIndex = {};
@@ -103,7 +144,7 @@ const calcColumnRepetition = () => {
 			sum += keyFrequency * nextFrequency;
 		}
 	}
-	return (sum*100).toPrecision(2)*1 + '%';
+	return (sum*100).toPrecision(2)*1;
 };
 
 const calcHeatmapValue = () => {
@@ -123,6 +164,17 @@ const calcHandBalance = () => {
 	return `${balance}% (${sum > 0.5? 'right': 'left'})`;
 };
 
+const parseHandBalance = (balance) => {
+	return Number(balance.split('%')[0])/100;
+};
+
+const calcFitness = () => {
+	const heatmap = calcHeatmapValue();
+	const balance = parseHandBalance(calcHandBalance());
+	const colRep = calcColumnRepetition();
+	return heatmap*1.5 - colRep*3 + Math.pow(balance, 4)*5;
+};
+
 const showKeyboardInfo = () => {
 	$('#info').html(`
 		Heatmap value: ${ calcHeatmapValue() }<br>
@@ -138,24 +190,54 @@ const showKeyInfo = (key) => {
 	`);
 };
 
+window.shuffle = () => {
+	const layout = keyArray.map((key) => key.char);
+	for (let i=layout.length; i;) {
+		const j = Math.random()*(i--) | 0;
+		const aux = layout[i];
+		layout[i] = layout[j];
+		layout[j] = aux;
+	}
+	setLayout(layout.join(''));
+	showKeyboardInfo();
+};
+
+window.store = () => {
+	const fitness = calcFitness();
+	const json = window.localStorage.getItem('stored') ?? '[]';
+	const array = JSON.parse(json);
+	const layout = keyArray.map((key) => key.char).join('');
+	const item = { layout, fitness };
+	array.push(item);
+	array.sort((a, b) => b.fitness - a.fitness);
+	window.localStorage.setItem('stored', JSON.stringify(array.slice(0, 20)));
+};
+
 let currentText = '';
-const maxWidth = 30;
+const maxWidth = 47;
 const updateText = () => {
-	currentText = currentText.replace(/\x20+/g, '_');
-	const words = currentText.split('_');
-	let text = words[0];
-	let line = text.length;
+	currentText = currentText
+		.replace(/\x20+/g, '_')
+		.replace(/^_+/, '')
+		.replace(/__+/g, '_');
+	let words = currentText.match(/[a-zç]+|_/g);
+	if (!words) {
+		$('#textbox').html('');
+		return;
+	}
+	let html = words[0];
+	let line = html.length;
 	for (let i=1; i<words.length; ++i) {
 		const word = words[i];
-		if (line + 1 + word.length <= maxWidth) {
-			text += '_' + word;
-			line += word.length + 1;
+		if (line + word.length <= maxWidth) {
+			html += word;
+			line += word.length;
 		} else {
-			text += '\n' + word;
+			html += '<br>' + word;
 			line = word.length;
 		}
 	}
-	$('#textbox').text(text);
+	$('#textbox').html(html);
 };
 
 const getPressedKey = (pressed) => {
