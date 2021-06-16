@@ -9,6 +9,7 @@ const layouts = {
 	colemak: 'qwfpgjluyçarstdhneiozxcvbkm,.;',
 	'custom-1': 'mfdw;çybulnstakjeoirzxcv,.qhpg',
 	'custom-2': 'çpduxvyqglintahceosr.bm;zj,kfw',
+	'custom-3': 'wpyo;,dulcrniegvtahsqbjçzxk.mf',
 	qwerty: 'qwertyuiopasdfghjklçzxcvbnm,.;',
 	workman: 'dqrwbjfupçashtgyneoizxmcvkl,.;',
 	dvorak: 'ç,.pyfgcrlaoeuidhtns;qjkxbmwvz',
@@ -168,11 +169,20 @@ const parseHandBalance = (balance) => {
 	return Number(balance.split('%')[0])/100;
 };
 
-const calcFitness = () => {
+const calcLangFitness = (lang) => {
+	const mode = Data.getMode();
+	Data.setMode(lang);
 	const heatmap = calcHeatmapValue();
 	const balance = parseHandBalance(calcHandBalance());
 	const colRep = calcColumnRepetition();
+	Data.setMode(mode);
 	return heatmap*1.5 - colRep*3 + Math.pow(balance, 4)*5;
+};
+
+const calcFitness = () => {
+	const pt = calcLangFitness('pt');
+	const en = calcLangFitness('en');
+	return Math.min(pt, en);
 };
 
 const showKeyboardInfo = () => {

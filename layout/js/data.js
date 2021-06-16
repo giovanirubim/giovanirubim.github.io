@@ -94,6 +94,7 @@ const loadPromise = init();
 export const load = async () => await loadPromise;
 
 export const setMode = (mode) => currentMode = mode;
+export const getMode = (mode) => currentMode;
 
 export const getTemperature = (char) => {
 	return getFrequency(char)*temperatureMultiplier[currentMode];
