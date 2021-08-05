@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<style type="text/css">
+			canvas {
+				box-shadow: -5px 5px 12px #aaa;
+			}
+		</style>
+		<title></title>
+	</head>
+	<body>
+		<canvas></canvas>
+	</body>
+</html>
+<script type="text/javascript">
+
+	const canvas = document.querySelector('canvas');
+	const ctx = canvas.getContext('2d');
+	const width = 850;
+	const height = 850;
+	const radius = 200;
+
+	canvas.width = width;
+	canvas.height = height;
+
+	const loadImage = (path) => new Promise((done) => {
+		const img = document.createElement('IMG');
+		img.onload = () => done(img);
+		img.src = path;
+	});
+
+	const canvasToNormalX = (x, width) => x/width*2 - 1;
+	const canvasToNormalY = (y, height) => (height - y)/height*2 - 1;
+	const canvasToNormal = (x, y, width, height) => [
+		canvasToNormalX(x, width),
+		canvasToNormalY(y, height),
+	];
+
+	const normalToCanvasX = (x, width) => (x + 1)*width/2;
+	const normalToCanvasY = (y, height) => height - (y + 1)/2*height;
+	const normalToCanvas = (x, y, width, height) => [
+		normalToCanvasX(x, width),
+		normalToCanvasY(y, height),
+	];
+
+	const setPixel = (x, y, color) => {
+		ctx.fillStyle = color;
+		ctx.fillRect(x, y, 1, 1);
+	};
+
+	const target = (x, y) => {
+		const color = '#f00';
+		for (let d=-5; d<=5; ++d) {
+			setPixel(x + d, y, color);
+			setPixel(x, y + d, color);
+		}
+	};
+
+	class ImageController {
+		constructor(image) {
+			const canvas = document.createElement('canvas');
+			const ctx = canvas.getContext('2d');
+			const { width, height } = image;
+			canvas.width = width;
+			canvas.height = height;
+			ctx.drawImage(image, 0, 0);
+			this.width = width;
+			this.height = height;
+			this.image = image;
+			this.canvas = canvas;
+			this.ctx = ctx;
+		}
+		colorAt(x, y) {
+			x = Math.floor(x);
+			y = Math.floor(y);
+			const { width, height, ctx } = this;
+			let { data } = ctx.getImageData(x, y, 1, 1);
+			const color = `rgb(${data.slice(0, 3).join(', ')})`;
+			return color;
+		}
+		*plot(method) {
+			const tWidth = this.width;
+			const tHeight = this.height;
+			for (let y=0; y<height; ++y) {
+				for (let x=0; x<width; ++x) {
+					let nx = canvasToNormalX(x, width);
+					let ny = canvasToNormalY(y, height);
+					[ nx, ny ] = method(nx, ny);
+					const tx = normalToCanvasX(nx, tWidth);
+					const ty = normalToCanvasY(ny, tHeight);
+					const color = this.colorAt(tx, ty);
+					setPixel(x, y, color);
+				}
+				yield;
+			}
+			console.log('done');
+		}
+	}
+
+	// const randomColor = () => {
+	// 	return '#---'.replace(/-/g, ()=>(Math.random()*16|0).toString(16));
+	// };
+
+	// class Dot extends Array {
+	// 	constructor(x, y, z) {
+	// 		super([ x, y, z ]);
+	// 		this.color = randomColor();
+	// 	}
+	// 	render() {
+	// 		const [x, y] = this;
+	// 		ctx.fillStyle = this.color;
+	// 		const rx = x*radius + width/2;
+	// 		const ry = height/2 - y*radius;
+	// 		ctx.fillRect(rx - 1, ry - 1, 3, 3);
+	// 	}
+	// }
+
+	const drawImage = (image) => {
+		ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, width, height);
+	};
+
+	const sin = (deg) => Math.sin(deg*(Math.PI/180));
+	const cos = (deg) => Math.cos(deg*(Math.PI/180));
+
+	const fixAngle = (angle) => angle <= 180 ? angle : angle - 360;
+	const atan = (tan) => Math.atan(tan)*(180/Math.PI);
+	const acos = (cos) => Math.acos(cos)*(180/Math.PI);
+	const asin = (sin) => Math.asin(sin)*(180/Math.PI);
+
+	const getAngle = (ndx, ndy) => {
+		return ndy >= 0 ? acos(ndx) : 360 - acos(ndx);
+	};
+
+	const fn = {
+		nAzimuthal: {
+			toNormal: (lat, long) => {
+				const radius = 0.5 - lat/180;
+				const dx = sin(long)*radius;
+				const dy = - cos(long)*radius;
+				return [ dx, dy ];
+			},
+			toCoord: (dx, dy) => {
+				const radius = Math.sqrt(dx*dx + dy*dy);
+				if (radius === 0) return [ 90, 0 ];
+				const lat = (1 - radius*2)*90;
+				const ndx = - dy/radius;
+				const ndy = dx/radius;
+				const long = fixAngle(getAngle(ndx, ndy));
+				return [ lat, long ];
+			},
+		},
+		gallpeters: {
+			toNormal: (lat, long) => {
+				const x = long/180;
+				const y = sin(lat);
+				return [ x, y ];
+			},
+			toCoord: (x, y) => {
+				const lat = fixAngle(asin(y));
+				const long = x*180;
+				return [ lat, long ];
+			},
+		},
+	};
+
+	const [ map, other ] = [
+		'gallpeters',
+		'nAzimuthal',
+	];
+
+	async function main() {
+		let img = await loadImage(`./${map}.jpg`);
+		drawImage(await loadImage(`./${other}.jpg`));
+		// ctx.globalAlpha = 0.5;
+		const controller = new ImageController(img);
+		const gen = controller.plot(
+			(x, y) => {
+				const coord = fn[other].toCoord(x, y);
+				return fn[map].toNormal(...coord);
+			},
+		);
+		setInterval(() => gen.next(), 0);
+	}
+
+	main();
+
+	canvas.onmousemove = (e) => {
+		const nx = canvasToNormalX(e.offsetX, width);
+		const ny = canvasToNormalY(e.offsetY, height);
+		const coord = fn.nAzimuthal.toCoord(nx, ny);
+		const normal = fn.nAzimuthal.toNormal(...coord);
+		const round = (arr) => arr.map(x=>x.toPrecision(3)).join(':');
+	};
+
+</script>
