@@ -3,6 +3,9 @@
 	<head>
 		<meta charset="utf-8">
 		<style type="text/css">
+			* {
+				font-family: monospace;
+			}
 			canvas {
 				box-shadow: -5px 5px 12px #aaa;
 			}
@@ -10,6 +13,10 @@
 		<title></title>
 	</head>
 	<body>
+		Source image: <select id="src"></select> <a href="" id="link">See image</a><br>
+		Project as: <select id="dst"></select> <input type="button" value="Project" id="project"/><br>
+		Mouse coord: <span id="coord">0, 0</span><br>
+		<input type="text" id="targCoord" placeholder="Coordinates"> <input type="button" value="Target" id="target"><br>
 		<canvas></canvas>
 	</body>
 </html>
@@ -19,7 +26,6 @@
 	const ctx = canvas.getContext('2d');
 	const width = 850;
 	const height = 850;
-	const radius = 200;
 
 	canvas.width = width;
 	canvas.height = height;
@@ -49,7 +55,7 @@
 		ctx.fillRect(x, y, 1, 1);
 	};
 
-	const target = (x, y) => {
+	const drawTarget = (x, y) => {
 		const color = '#f00';
 		for (let d=-5; d<=5; ++d) {
 			setPixel(x + d, y, color);
@@ -98,24 +104,6 @@
 		}
 	}
 
-	// const randomColor = () => {
-	// 	return '#---'.replace(/-/g, ()=>(Math.random()*16|0).toString(16));
-	// };
-
-	// class Dot extends Array {
-	// 	constructor(x, y, z) {
-	// 		super([ x, y, z ]);
-	// 		this.color = randomColor();
-	// 	}
-	// 	render() {
-	// 		const [x, y] = this;
-	// 		ctx.fillStyle = this.color;
-	// 		const rx = x*radius + width/2;
-	// 		const ry = height/2 - y*radius;
-	// 		ctx.fillRect(rx - 1, ry - 1, 3, 3);
-	// 	}
-	// }
-
 	const drawImage = (image) => {
 		ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, width, height);
 	};
@@ -123,7 +111,7 @@
 	const sin = (deg) => Math.sin(deg*(Math.PI/180));
 	const cos = (deg) => Math.cos(deg*(Math.PI/180));
 
-	const fixAngle = (angle) => angle <= 180 ? angle : angle - 360;
+	const fixAngle = (angle) => angle < 180 ? angle : angle - 360;
 	const atan = (tan) => Math.atan(tan)*(180/Math.PI);
 	const acos = (cos) => Math.acos(cos)*(180/Math.PI);
 	const asin = (sin) => Math.asin(sin)*(180/Math.PI);
@@ -164,33 +152,70 @@
 		},
 	};
 
-	const [ map, other ] = [
-		'gallpeters',
-		'nAzimuthal',
-	];
+	const mapNames = {
+		'gallpeters': 'Gall-Peters',
+		'nAzimuthal': 'Azimuthal (north)',
+	};
 
-	async function main() {
-		let img = await loadImage(`./${map}.jpg`);
-		drawImage(await loadImage(`./${other}.jpg`));
-		// ctx.globalAlpha = 0.5;
-		const controller = new ImageController(img);
-		const gen = controller.plot(
-			(x, y) => {
-				const coord = fn[other].toCoord(x, y);
-				return fn[map].toNormal(...coord);
-			},
-		);
-		setInterval(() => gen.next(), 0);
-	}
-
-	main();
-
+	const coordSpan = document.querySelector('#coord');
 	canvas.onmousemove = (e) => {
 		const nx = canvasToNormalX(e.offsetX, width);
 		const ny = canvasToNormalY(e.offsetY, height);
-		const coord = fn.nAzimuthal.toCoord(nx, ny);
-		const normal = fn.nAzimuthal.toNormal(...coord);
-		const round = (arr) => arr.map(x=>x.toPrecision(3)).join(':');
+		const coord = fn[selectDst.value].toCoord(nx, ny);
+		coordSpan.innerHTML = coord.join(', ');
 	};
+
+	async function project(src, dst) {
+		let img = await loadImage(`./${src}.jpg`);
+		const controller = new ImageController(img);
+		const gen = controller.plot(
+			(x, y) => {
+				const coord = fn[dst].toCoord(x, y);
+				return fn[src].toNormal(...coord);
+			},
+		);
+		while (!gen.next().done) {
+			await new Promise((done) => setTimeout(done, 0));
+		}
+	}
+
+	function getSelectInnerHTML() {
+		let html = '';
+		for (let id in mapNames) {
+			const name = mapNames[id];
+			html += `<option value="${id}">${name}</option>`;
+		}
+		return html;
+	}
+
+
+	const selectHTML = getSelectInnerHTML();
+	const selectSrc = document.querySelector('#src');
+	const selectDst = document.querySelector('#dst');
+	selectSrc.innerHTML = selectHTML;
+	selectDst.innerHTML = selectHTML;
+
+	document.querySelector('#project').onclick = () => {
+		const src = selectSrc.value;
+		const dst = selectDst.value;
+		project(src, dst);
+	};
+
+	document.querySelector('#target').onclick = () => {
+		const coord = document.querySelector('#targCoord')
+			.value
+			.split(/\s*,\s*/)
+			.map(x => Number(x));
+		const normal = fn[selectDst.value].toNormal(...coord);
+		const [ x, y ] = normalToCanvas(...normal, width, height);
+		drawTarget(x, y);
+	};
+
+	const link = document.querySelector('#link');
+	function updateLink() {
+		link.href = `./${selectSrc.value}.jpg`;
+	}
+	selectSrc.onchange = updateLink;
+	updateLink();
 
 </script>
