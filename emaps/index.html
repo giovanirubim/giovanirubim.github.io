@@ -9,14 +9,18 @@
 			canvas {
 				box-shadow: -5px 5px 12px #aaa;
 			}
+			div {
+				margin-bottom: 5px;
+			}
 		</style>
 		<title></title>
 	</head>
 	<body>
-		Source image: <select id="src"></select> <a href="" id="link">See image</a><br>
-		Project as: <select id="dst"></select> <input type="button" value="Project" id="project"/><br>
-		Mouse coord: <span id="coord">0, 0</span><br>
-		<input type="text" id="targCoord" placeholder="Coordinates"> <input type="button" value="Target" id="target"><br>
+		<div>Source image: <select id="src"></select> <a href="" id="link">See image</a></div>
+		<div>Project as: <select id="dst"></select> <input type="button" value="Project" id="project"/></div>
+		<div>Mouse coord: <span id="coord">0, 0</span></div>
+		<div><input type="text" id="targCoord" placeholder="Coordinates"> <input type="button" value="Target" id="target"></div>
+		<div>Canvas dimention: <input type="text" id="height"> x <span id="width"></span></div>
 		<canvas></canvas>
 	</body>
 </html>
@@ -24,11 +28,6 @@
 
 	const canvas = document.querySelector('canvas');
 	const ctx = canvas.getContext('2d');
-	const width = 850;
-	const height = 850;
-
-	canvas.width = width;
-	canvas.height = height;
 
 	const loadImage = (path) => new Promise((done) => {
 		const img = document.createElement('IMG');
@@ -36,8 +35,14 @@
 		img.src = path;
 	});
 
-	const canvasToNormalX = (x, width) => x/width*2 - 1;
-	const canvasToNormalY = (y, height) => (height - y)/height*2 - 1;
+	const canvasToNormalX = (x, width) => {
+		return x/width*2 - 1;
+	};
+	const canvasToNormalY = (y, height) => {
+		return (height - y)/height*2 - 1;
+	};
+	// const canvasToNormalX = (x, width) => x/width*2 - 1;
+	// const canvasToNormalY = (y, height) => (height - y)/height*2 - 1;
 	const canvasToNormal = (x, y, width, height) => [
 		canvasToNormalX(x, width),
 		canvasToNormalY(y, height),
@@ -50,16 +55,16 @@
 		normalToCanvasY(y, height),
 	];
 
-	const setPixel = (x, y, color) => {
+	const drawPixel = (x, y, color) => {
 		ctx.fillStyle = color;
-		ctx.fillRect(x, y, 1, 1);
+		ctx.fillRect(x - 0.5, y - 0.5, 1, 1);
 	};
 
 	const drawTarget = (x, y) => {
 		const color = '#f00';
 		for (let d=-5; d<=5; ++d) {
-			setPixel(x + d, y, color);
-			setPixel(x, y + d, color);
+			drawPixel(x + d, y, color);
+			drawPixel(x, y + d, color);
 		}
 	};
 
@@ -78,25 +83,26 @@
 			this.ctx = ctx;
 		}
 		colorAt(x, y) {
-			x = Math.floor(x);
-			y = Math.floor(y);
+			x = Math.round(x - 0.5);
+			y = Math.round(y - 0.5);
 			const { width, height, ctx } = this;
 			let { data } = ctx.getImageData(x, y, 1, 1);
 			const color = `rgb(${data.slice(0, 3).join(', ')})`;
 			return color;
 		}
-		*plot(method) {
+		*plot(transform) {
+			const { width, height } = canvas;
 			const tWidth = this.width;
 			const tHeight = this.height;
-			for (let y=0; y<height; ++y) {
-				for (let x=0; x<width; ++x) {
+			for (let y=0.5; y<height; ++y) {
+				for (let x=0.5; x<width; ++x) {
 					let nx = canvasToNormalX(x, width);
 					let ny = canvasToNormalY(y, height);
-					[ nx, ny ] = method(nx, ny);
+					[ nx, ny ] = transform(nx, ny);
 					const tx = normalToCanvasX(nx, tWidth);
 					const ty = normalToCanvasY(ny, tHeight);
 					const color = this.colorAt(tx, ty);
-					setPixel(x, y, color);
+					drawPixel(x, y, color);
 				}
 				yield;
 			}
@@ -109,18 +115,21 @@
 
 	const sin = (deg) => Math.sin(deg*(Math.PI/180));
 	const cos = (deg) => Math.cos(deg*(Math.PI/180));
+	const tan = (deg) => Math.tan(deg*(Math.PI/180));
 
 	const fixAngle = (angle) => angle < 180 ? angle : angle - 360;
-	const atan = (tan) => Math.atan(tan)*(180/Math.PI);
 	const acos = (cos) => Math.acos(cos)*(180/Math.PI);
 	const asin = (sin) => Math.asin(sin)*(180/Math.PI);
+	const atan = (tan) => Math.atan(tan)*(180/Math.PI);
 
 	const getAngle = (ndx, ndy) => {
 		return ndy >= 0 ? acos(ndx) : 360 - acos(ndx);
 	};
 
-	const fn = {
+	const maps = {
 		nAzimuthal: {
+			name: 'Azimuthal (north)',
+			ratio: 1,
 			toNormal: (lat, long) => {
 				const radius = 0.5 - lat/180;
 				const dx = sin(long)*radius;
@@ -138,6 +147,8 @@
 			},
 		},
 		gallpeters: {
+			name: 'Gall-Peters',
+			ratio: 1.571203776553895,
 			toNormal: (lat, long) => {
 				const x = long/180;
 				const y = sin(lat);
@@ -151,16 +162,13 @@
 		},
 	};
 
-	const mapNames = {
-		'gallpeters': 'Gall-Peters',
-		'nAzimuthal': 'Azimuthal (north)',
-	};
+	const mapNames = Object.values(maps).map((map) => map.name);
 
 	const coordSpan = document.querySelector('#coord');
 	canvas.onmousemove = (e) => {
-		const nx = canvasToNormalX(e.offsetX, width);
-		const ny = canvasToNormalY(e.offsetY, height);
-		const coord = fn[selectDst.value].toCoord(nx, ny);
+		const nx = canvasToNormalX(e.offsetX, canvas.width);
+		const ny = canvasToNormalY(e.offsetY, canvas.height);
+		const coord = maps[selectDst.value].toCoord(nx, ny);
 		coordSpan.innerHTML = coord.join(', ');
 	};
 
@@ -169,19 +177,21 @@
 		const controller = new ImageController(img);
 		const gen = controller.plot(
 			(x, y) => {
-				const coord = fn[dst].toCoord(x, y);
-				return fn[src].toNormal(...coord);
+				const coord = maps[dst].toCoord(x, y);
+				return maps[src].toNormal(...coord);
 			},
 		);
+		const extra = 2;
 		while (!gen.next().done) {
+			for (let i=extra; i--;) gen.next();
 			await new Promise((done) => setTimeout(done, 0));
 		}
 	}
 
 	function getSelectInnerHTML() {
 		let html = '';
-		for (let id in mapNames) {
-			const name = mapNames[id];
+		for (let id in maps) {
+			const { name } = maps[id];
 			html += `<option value="${id}">${name}</option>`;
 		}
 		return html;
@@ -191,6 +201,7 @@
 	const selectHTML = getSelectInnerHTML();
 	const selectSrc = document.querySelector('#src');
 	const selectDst = document.querySelector('#dst');
+	const spanWidth = document.querySelector('#width');
 	selectSrc.innerHTML = selectHTML;
 	selectDst.innerHTML = selectHTML;
 
@@ -205,16 +216,43 @@
 			.value
 			.split(/\s*,\s*/)
 			.map(x => Number(x));
-		const normal = fn[selectDst.value].toNormal(...coord);
-		const [ x, y ] = normalToCanvas(...normal, width, height);
+		const normal = maps[selectDst.value].toNormal(...coord);
+		const [ x, y ] = normalToCanvas(...normal, canvas.width, canvas.height);
 		drawTarget(x, y);
 	};
 
 	const link = document.querySelector('#link');
+	const inputHeight = document.querySelector('#height');
+
 	function updateLink() {
 		link.href = `./${selectSrc.value}.jpg`;
 	}
-	selectSrc.onchange = updateLink;
+
+	function updateCanvasSize() {
+		const str = inputHeight.value;
+		if (!str.match(/^\d+$/)) {
+			return;
+		}
+		const height = Number(str);
+		const map = maps[selectDst.value];
+		const width = Math.round(map.ratio * height);
+		spanWidth.innerText = width;
+		canvas.height = height;
+		canvas.width = width;
+	}
+
+	selectSrc.onchange = () => {
+		updateLink();
+	};
+	selectDst.onchange = () => {
+		updateCanvasSize();
+	};
+	inputHeight.onchange = () => {
+		updateCanvasSize();
+	};
+
 	updateLink();
+	inputHeight.value = '600';
+	updateCanvasSize();
 
 </script>
