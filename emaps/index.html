@@ -306,7 +306,7 @@
 		const [ax, ay, az] = coordToXyz(aLat, aLong);
 		const [bx, by, bz] = coordToXyz(bLat, bLong);
 		const xyzDist = calcXyzDist(ax, ay, az, bx, by, bz);
-		return xyzDistToSurfDist(xyzDist);
+		return xyzToSurfDist(xyzDist);
 	};
 
 </script>
