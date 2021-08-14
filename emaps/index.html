@@ -6,8 +6,10 @@
 			* {
 				font-family: monospace;
 			}
-			canvas {
+			.canvas {
 				box-shadow: -5px 5px 12px #aaa;
+				display: inline-block;
+				font-size: 0px;
 			}
 			div {
 				margin-bottom: 5px;
@@ -21,15 +23,17 @@
 		<div>Mouse coord: <span id="coord">0, 0</span></div>
 		<div><input type="text" id="targCoord" placeholder="Coordinates"> <input type="button" value="Target" id="target"></div>
 		<div>Canvas dimention: <input type="text" id="height"> x <span id="width"></span></div>
-		<canvas></canvas>
+		<div class="canvas">
+			<canvas></canvas>
+		</div>
 	</body>
 </html>
 <script type="text/javascript">
 
 	const EARTH_RADIUS = 6.371e6;
 
-	const canvas = document.querySelector('canvas');
-	const ctx = canvas.getContext('2d');
+	const canvas = [ ...document.querySelectorAll('canvas') ];
+	const ctx = canvas[0].getContext('2d');
 
 	const loadImage = (path) => new Promise((done) => {
 		const img = document.createElement('IMG');
@@ -53,7 +57,7 @@
 
 	const drawPixel = (x, y, color) => {
 		ctx.fillStyle = color;
-		ctx.fillRect(x - 0.5, y - 0.5, 1, 1);
+		ctx.fillRect(x, y, 1, 1);
 	};
 
 	const drawTarget = (x, y) => {
@@ -68,8 +72,8 @@
 	};
 
 	const resizeCanvas = (width, height) => {
-		canvas.width = width;
-		canvas.height = height;
+		canvas[0].width = width;
+		canvas[0].height = height;
 	};
 
 	class ImageController {
@@ -94,27 +98,70 @@
 			const color = `rgb(${data.slice(0, 3).join(', ')})`;
 			return color;
 		}
-		*plot(transform) {
-			const { width, height } = canvas;
+		plotPixel(x, y, transform) {
+			const { width, height } = canvas[0];
 			const tWidth = this.width;
 			const tHeight = this.height;
-			for (let y=0.5; y<height; ++y) {
-				for (let x=0.5; x<width; ++x) {
-					let nx = canvasToNormalX(x, width);
-					let ny = canvasToNormalY(y, height);
-					[ nx, ny ] = transform(nx, ny);
-					const tx = normalToCanvasX(nx, tWidth);
-					const ty = normalToCanvasY(ny, tHeight);
-					const color = this.colorAt(tx, ty);
-					drawPixel(x, y, color);
+			let nx = canvasToNormalX(x + 0.5, width);
+			let ny = canvasToNormalY(y + 0.5, height);
+			[ nx, ny ] = transform(nx, ny);
+			const tx = normalToCanvasX(nx, tWidth);
+			const ty = normalToCanvasY(ny, tHeight);
+			const color = this.colorAt(tx, ty);
+			drawPixel(x, y, color);
+		}
+		*plotUpDown(transform) {
+			const { width, height } = canvas[0];
+			for (let y=0; y<height; ++y) {
+				for (let x=0; x<width; ++x) {
+					this.plotPixel(x, y, transform);
 				}
 				yield;
+			}
+		}
+		plotArea(transform, startX, startY, width, height) {
+			const endX = startX + width;
+			const endY = startY + height;
+			for (let y=startY; y<endY; ++y) {
+				for (let x=startX; x<endX; ++x) {
+					this.plotPixel(x, y, transform);
+				}
+			}
+		}
+		*plotAreas(transform, startX, startY, width, height, maxArea) {
+			const area = width*height;
+			if (area === 0) {
+				return;
+			}
+			if (area <= maxArea) {
+				this.plotArea(transform, startX, startY, width, height);
+				yield;
+				return;
+			}
+			const widths = [
+				0,
+				width - (width >> 1),
+				width >> 1,
+			];
+			const heights = [
+				0,
+				height - (height >> 1),
+				height >> 1,
+			];
+			for (let i=1; i<3; ++i) {
+				const x = startX + widths[i - 1];
+				const width = widths[i];
+				for (let j=1; j<3; ++j) {
+					const y = startY + heights[j - 1];
+					const height = heights[j];
+					yield* this.plotAreas(transform, x, y, width, height, maxArea);
+				}
 			}
 		}
 	}
 
 	const drawImage = (image) => {
-		ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, canvas.width, canvas.height);
+		ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, canvas[0].width, canvas[0].height);
 	};
 
 	const sin = (deg) => Math.sin(deg*(Math.PI/180));
@@ -170,9 +217,9 @@
 
 	const coordSpan = document.querySelector('#coord');
 	let currentCoord = [0, 0];
-	canvas.onmousemove = (e) => {
-		const nx = canvasToNormalX(e.offsetX, canvas.width);
-		const ny = canvasToNormalY(e.offsetY, canvas.height);
+	canvas[0].onmousemove = (e) => {
+		const nx = canvasToNormalX(e.offsetX, canvas[0].width);
+		const ny = canvasToNormalY(e.offsetY, canvas[0].height);
 		currentCoord = maps[selectDst.value].toCoord(nx, ny);
 		coordSpan.innerHTML = currentCoord.join(', ');
 	};
@@ -180,15 +227,17 @@
 	async function project(src, dst) {
 		let img = await loadImage(`./${src}.jpg`);
 		const controller = new ImageController(img);
-		const gen = controller.plot(
+		const gen = controller.plotAreas(
 			(x, y) => {
 				const coord = maps[dst].toCoord(x, y);
 				return maps[src].toNormal(...coord);
 			},
+			0, 0,
+			canvas[0].width,
+			canvas[0].height,
+			0x1000,
 		);
-		const extra = 2;
 		while (!gen.next().done) {
-			for (let i=extra; i--;) gen.next();
 			await new Promise((done) => setTimeout(done, 0));
 		}
 	}
@@ -224,7 +273,7 @@
 			.split(/\s*,\s*/)
 			.map(x => Number(x));
 		const normal = maps[selectDst.value].toNormal(...coord);
-		const [ x, y ] = normalToCanvas(...normal, canvas.width, canvas.height);
+		const [ x, y ] = normalToCanvas(...normal, canvas[0].width, canvas[0].height);
 		drawTarget(x, y);
 	};
 
@@ -282,17 +331,17 @@
 		return Math.sqrt(dx*dx + dy*dy + dz*dz);
 	};
 
-	const xyzToSurfDist = (xyzDist) => {
+	const xyzDistToSurfDist = (xyzDist) => {
 		const halfRadAngle = Math.asin(xyzDist/2);
 		const radAngle = 2*halfRadAngle;
 		return radAngle*EARTH_RADIUS;
 	};
 
-	const coordsToSurfDist = (aLat, aLong, bLat, bLong) => {
+	const calcCoordSurfDist = (aLat, aLong, bLat, bLong) => {
 		const [ax, ay, az] = coordToXyz(aLat, aLong);
 		const [bx, by, bz] = coordToXyz(bLat, bLong);
 		const xyzDist = calcXyzDist(ax, ay, az, bx, by, bz);
-		return xyzToSurfDist(xyzDist);
+		return xyzDistToSurfDist(xyzDist);
 	};
 
 </script>
