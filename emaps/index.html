@@ -16,7 +16,7 @@
 		<title></title>
 	</head>
 	<body>
-		<div>Source image: <select id="src"></select> <a href="" id="link">See image</a></div>
+		<div>Source image: <select id="src"></select> <input type="button" id="draw" value="Draw"> <a href="" id="link">See image</a></div>
 		<div>Project as: <select id="dst"></select> <input type="button" value="Project" id="project"/></div>
 		<div>Mouse coord: <span id="coord">0, 0</span></div>
 		<div><input type="text" id="targCoord" placeholder="Coordinates"> <input type="button" value="Target" id="target"></div>
@@ -25,6 +25,8 @@
 	</body>
 </html>
 <script type="text/javascript">
+
+	const EARTH_RADIUS = 6.371e6;
 
 	const canvas = document.querySelector('canvas');
 	const ctx = canvas.getContext('2d');
@@ -35,14 +37,8 @@
 		img.src = path;
 	});
 
-	const canvasToNormalX = (x, width) => {
-		return x/width*2 - 1;
-	};
-	const canvasToNormalY = (y, height) => {
-		return (height - y)/height*2 - 1;
-	};
-	// const canvasToNormalX = (x, width) => x/width*2 - 1;
-	// const canvasToNormalY = (y, height) => (height - y)/height*2 - 1;
+	const canvasToNormalX = (x, width) => x/width*2 - 1;
+	const canvasToNormalY = (y, height) => (height - y)/height*2 - 1;
 	const canvasToNormal = (x, y, width, height) => [
 		canvasToNormalX(x, width),
 		canvasToNormalY(y, height),
@@ -61,11 +57,19 @@
 	};
 
 	const drawTarget = (x, y) => {
-		const color = '#f00';
-		for (let d=-5; d<=5; ++d) {
-			drawPixel(x + d, y, color);
-			drawPixel(x, y + d, color);
-		}
+		ctx.strokeStyle = '#f00';
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.moveTo(x, y - 5);
+		ctx.lineTo(x, y + 5);
+		ctx.moveTo(x - 5, y);
+		ctx.lineTo(x + 5, y);
+		ctx.stroke();
+	};
+
+	const resizeCanvas = (width, height) => {
+		canvas.width = width;
+		canvas.height = height;
 	};
 
 	class ImageController {
@@ -110,7 +114,7 @@
 	}
 
 	const drawImage = (image) => {
-		ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, width, height);
+		ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, canvas.width, canvas.height);
 	};
 
 	const sin = (deg) => Math.sin(deg*(Math.PI/180));
@@ -160,16 +164,31 @@
 				return [ lat, long ];
 			},
 		},
+		grid: {
+			name: 'Grid',
+			ratio: 1.571203776553895,
+			toNormal: (lat, long) => {
+				const x = long/180;
+				const y = lat/90;
+				return [ x, y ];
+			},
+			toCoord: (x, y) => {
+				const long = x*180;
+				const lat = y*90;
+				return [ lat, long ];
+			},
+		},
 	};
 
 	const mapNames = Object.values(maps).map((map) => map.name);
 
 	const coordSpan = document.querySelector('#coord');
+	let currentCoord = [0, 0];
 	canvas.onmousemove = (e) => {
 		const nx = canvasToNormalX(e.offsetX, canvas.width);
 		const ny = canvasToNormalY(e.offsetY, canvas.height);
-		const coord = maps[selectDst.value].toCoord(nx, ny);
-		coordSpan.innerHTML = coord.join(', ');
+		currentCoord = maps[selectDst.value].toCoord(nx, ny);
+		coordSpan.innerHTML = currentCoord.join(', ');
 	};
 
 	async function project(src, dst) {
@@ -197,6 +216,8 @@
 		return html;
 	}
 
+	const currentSrcMap = () => maps[selectSrc.value];
+	const currentDstMap = () => maps[selectDst.value];
 
 	const selectHTML = getSelectInnerHTML();
 	const selectSrc = document.querySelector('#src');
@@ -221,6 +242,12 @@
 		drawTarget(x, y);
 	};
 
+	document.querySelector('#draw').onclick = async () => {
+		const url = `./${selectSrc.value}.jpg`;
+		const image = await loadImage(url);
+		drawImage(image);
+	};
+
 	const link = document.querySelector('#link');
 	const inputHeight = document.querySelector('#height');
 
@@ -237,8 +264,7 @@
 		const map = maps[selectDst.value];
 		const width = Math.round(map.ratio * height);
 		spanWidth.innerText = width;
-		canvas.height = height;
-		canvas.width = width;
+		resizeCanvas(width, height);
 	}
 
 	selectSrc.onchange = () => {
@@ -254,5 +280,33 @@
 	updateLink();
 	inputHeight.value = '600';
 	updateCanvasSize();
+
+	const coordToXyz = (lat, long) => {
+		const y = sin(lat);
+		const rad = cos(lat);
+		const x = sin(long)*rad;
+		const z = cos(long)*rad;
+		return [x, y, z].map((x) => x.toFixed(10)*1);
+	};
+
+	const calcXyzDist = (ax, ay, az, bx, by, bz) => {
+		const dx = bx - ax;
+		const dy = by - ay;
+		const dz = bz - az;
+		return Math.sqrt(dx*dx + dy*dy + dz*dz);
+	};
+
+	const xyzToSurfDist = (xyzDist) => {
+		const halfRadAngle = Math.asin(xyzDist/2);
+		const radAngle = 2*halfRadAngle;
+		return radAngle*EARTH_RADIUS;
+	};
+
+	const coordsToSurfDist = (aLat, aLong, bLat, bLong) => {
+		const [ax, ay, az] = coordToXyz(aLat, aLong);
+		const [bx, by, bz] = coordToXyz(bLat, bLong);
+		const xyzDist = calcXyzDist(ax, ay, az, bx, by, bz);
+		return xyzDistToSurfDist(xyzDist);
+	};
 
 </script>
