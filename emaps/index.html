@@ -25,6 +25,7 @@
 		<div>Canvas dimention: <input type="text" id="height"> x <span id="width"></span></div>
 		<div class="canvas">
 			<canvas></canvas>
+			<canvas></canvas>
 		</div>
 	</body>
 </html>
@@ -34,6 +35,8 @@
 
 	const canvas = [ ...document.querySelectorAll('canvas') ];
 	const ctx = canvas[0].getContext('2d');
+	const lastCanvas = canvas.slice().reverse()[0];
+	const lastCtx = lastCanvas.getContext('2d');
 
 	const loadImage = (path) => new Promise((done) => {
 		const img = document.createElement('IMG');
@@ -72,8 +75,14 @@
 	};
 
 	const resizeCanvas = (width, height) => {
-		canvas[0].width = width;
-		canvas[0].height = height;
+		for (let i=0; i<canvas.length; ++i) {
+			const item = canvas[i];
+			item.width = width;
+			item.height = height;
+			if (i) {
+				item.style.marginLeft = (-width) + 'px';
+			}
+		}
 	};
 
 	class ImageController {
@@ -91,8 +100,8 @@
 			this.ctx = ctx;
 		}
 		colorAt(x, y) {
-			x = Math.round(x - 0.5);
-			y = Math.round(y - 0.5);
+			x = Math.max(0, Math.round(x - 0.5));
+			y = Math.max(0, Math.round(y - 0.5));
 			const { width, height, ctx } = this;
 			let { data } = ctx.getImageData(x, y, 1, 1);
 			const color = `rgb(${data.slice(0, 3).join(', ')})`;
@@ -217,25 +226,99 @@
 
 	const coordSpan = document.querySelector('#coord');
 	let currentCoord = [0, 0];
-	canvas[0].onmousemove = (e) => {
-		const nx = canvasToNormalX(e.offsetX, canvas[0].width);
-		const ny = canvasToNormalY(e.offsetY, canvas[0].height);
+	let line = null;
+	const calcXyzMidPoint = (ax, ay, az, bx, by, bz) => {
+		let x = (ax + bx)/2;
+		let y = (ay + by)/2;
+		let z = (az + bz)/2;
+		const mul = 1/Math.sqrt(x*x + y*y + z*z);
+		x *= mul;
+		y *= mul;
+		z *= mul;
+		return [ x, y, z ];
+	};
+	const segmentLine = (ax, ay, az, bx, by, bz, maxDist) => {
+		const dist = calcXyzDist(ax, ay, az, bx, by, bz);
+		if (dist <= maxDist) {
+			return [[ bx, by, bz ]];
+		}
+		const m = calcXyzMidPoint(ax, ay, az, bx, by, bz);
+		const a = segmentLine(ax, ay, az, ...m, maxDist);
+		const b = segmentLine(...m, bx, by, bz, maxDist);
+		return [ ...a, ...b ];
+	};
+	const drawLine = () => {
+		const ctx = lastCtx;
+		const { a, b } = line;
+		const { width, height } = canvas[0];
+		const aXyz = coordToXyz(a.lat, a.long);
+		const bXyz = coordToXyz(b.lat, b.long);
+		const map = currentDstMap();
+		ctx.clearRect(0, 0, width, height);
+		ctx.strokeStyle = '#000';
+		ctx.beginPath();
+		ctx.moveTo(...normalToCanvas(a.nx, a.ny, width, height));
+		segmentLine(...aXyz, ...bXyz, .05)
+			.forEach(([x, y, z]) => {
+				const coord = xyzToCoord(x, y, z);
+				const [nx, ny] = map.toNormal(...coord);
+				ctx.lineTo(...normalToCanvas(nx, ny, width, height));
+			});
+		ctx.stroke();
+	};
+	lastCanvas.onmousemove = (e) => {
+		const x = e.offsetX;
+		const y = e.offsetY;
+		const nx = canvasToNormalX(x, canvas[0].width);
+		const ny = canvasToNormalY(y, canvas[0].height);
 		currentCoord = maps[selectDst.value].toCoord(nx, ny);
 		coordSpan.innerHTML = currentCoord.join(', ');
+		if ((e.buttons & 1) && line && line.end === false) {
+			line.b.x = x;
+			line.b.y = y;
+			line.b.nx = nx;
+			line.b.ny = ny;
+			const [lat, long] = currentCoord;
+			line.b.lat = lat;
+			line.b.long = long;
+			drawLine();
+		}
 	};
+	lastCanvas.onmousedown = (e) => {
+		if (e.button !== 0) {
+			return;
+		}
+		const x = e.offsetX;
+		const y = e.offsetY;
+		const nx = canvasToNormalX(x, canvas[0].width);
+		const ny = canvasToNormalY(y, canvas[0].height);
+		const [lat, long] = maps[selectDst.value].toCoord(nx, ny);
+		line = {
+			end: false,
+			a: { x, y, nx, ny, lat, long },
+			b: { x, y, nx, ny, lat, long },
+		};
+	};
+	lastCanvas.onmouseup = (e) => {
+		if (e.button === 0 && line) {
+			line.end = true;
+		}
+	};
+
+	const maxProjectionArea = 0x1000;
 
 	async function project(src, dst) {
 		let img = await loadImage(`./${src}.jpg`);
 		const controller = new ImageController(img);
-		const gen = controller.plotAreas(
+		const gen = controller.plotUpDown(
 			(x, y) => {
 				const coord = maps[dst].toCoord(x, y);
 				return maps[src].toNormal(...coord);
 			},
-			0, 0,
-			canvas[0].width,
-			canvas[0].height,
-			0x1000,
+			// 0, 0,
+			// canvas[0].width,
+			// canvas[0].height,
+			// maxProjectionArea,
 		);
 		while (!gen.next().done) {
 			await new Promise((done) => setTimeout(done, 0));
@@ -321,7 +404,16 @@
 		const rad = cos(lat);
 		const x = sin(long)*rad;
 		const z = cos(long)*rad;
-		return [x, y, z].map((x) => x.toFixed(10)*1);
+		return [x, y, z];
+	};
+
+	const xyzToCoord = (x, y, z) => {
+		const lat = asin(y);
+		const rad = Math.sqrt(x*x + z*z);
+		const long = rad === 0 ? 0 : (
+			x >= 0? acos(z/rad) : -acos(z/rad)
+		);
+		return [ lat, long ];
 	};
 
 	const calcXyzDist = (ax, ay, az, bx, by, bz) => {
