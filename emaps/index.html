@@ -220,6 +220,16 @@
 				return [ lat, long ];
 			},
 		},
+		grid: {
+			name: 'Grid',
+			ratio: 2,
+			toNormal: (lat, long) => {
+				return [ long/180, lat/90 ];
+			},
+			toCoord: (x, y) => {
+				return [ y*90, x*180 ];
+			},
+		},
 	};
 
 	const mapNames = Object.values(maps).map((map) => map.name);

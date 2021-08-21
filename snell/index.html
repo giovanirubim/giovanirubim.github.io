@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<style type="text/css">
+			body {
+				background-color: #222;
+				margin: 100px;
+				text-align: center;
+			}
+			canvas {
+				box-shadow: -5px 5px 10px #000;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas></canvas>
+	</body>
+</html>
+<script type="text/javascript">
+	
+	const canvas = document.querySelector('canvas');
+	const ctx = canvas.getContext('2d');
+	const C = 299792458;
+
+	const indexToSpeed = (index) => C/index;
+
+	const media = [
+		{ index: 1, length: 250, color: '#000' },
+		{ index: 2, length: 250, color: '#123' },
+		{ index: 3, length: 250, color: '#246' },
+	];
+
+	media.forEach((medium, i) => {
+		const start = media[i - 1]?.end ?? 0;
+		medium.speed = indexToSpeed(medium.index);
+		medium.start = start;
+		medium.end = start + medium.length;
+	});
+
+	const height = media
+		.map(({ length }) => length)
+		.reduce((a, b) => a + b);
+
+	const width = height;
+
+	const points = [[
+		width*0.5,
+		media[0].length/2,
+	], [
+		width*0.75,
+		height - media.slice().reverse()[0].length/2,
+	]];
+
+	canvas.width = canvas.height = height;
+
+	const drawMedia = () => {
+		let y = 0;
+		for (let { length, color } of media) {
+			ctx.fillStyle = color;
+			ctx.fillRect(0, y, width, length);
+			y += length;
+		}
+	};
+
+	const drawPoints = () => {
+		ctx.fillStyle = '#ff0';
+		for (let [x, y] of points) {
+			ctx.beginPath();
+			ctx.arc(x, y, 3, 0, Math.PI*2);
+			ctx.fill();
+		}
+	};
+
+	const drawPath = (path) => {
+		ctx.strokeStyle = '#f00';
+		ctx.beginPath();
+		for (let i=0; i<path.length; ++i) {
+			const [x, y] = path[i];
+			if (i) {
+				ctx.lineTo(x, y);
+			} else {
+				ctx.moveTo(x, y);
+			}
+		}
+		ctx.stroke();
+	};
+
+	const createPath = () => {
+		const start = points[0].slice();
+		const end = points.slice().reverse()[0];
+		const inner = [];
+		let y = 0;
+		for (let medium of media) {
+			y += medium.length;
+			if (y >= end[1]) break;
+			inner.push([ Math.random()*width, y ]);
+		}
+		return [start, ...inner, end];
+	};
+
+	const changePath = (path, changeRate) => {
+		for (let i=1; i<path.length-1; ++i) {
+			path[i][0] += (0.5 - Math.random())*changeRate;
+		}
+	};
+
+	const calculatePathTime = (path) => {
+		let res = 0;
+		for (let i=1; i<path.length; ++i) {
+			const [ax, ay] = path[i-1];
+			const [bx, by] = path[i];
+			const dx = bx - ax;
+			const dy = by - ay;
+			const length = Math.sqrt(dx*dx + dy*dy);
+			const speed = media[i - 1].speed;
+			const time = length/speed;
+			res += time;
+		}
+		return res;
+	};
+
+	const setEnd = (x, y) => {
+		const end = points[1] = [x, y];
+		currentPath[currentPath.length - 1] = end;
+		currentTime = calculatePathTime(currentPath);
+	};
+
+	let currentPath = createPath();
+	let currentTime = calculatePathTime(currentPath);
+	let changeRate = 1;
+	let missCount = 0;
+	const minChangeRate = 0.1;
+	const maxChangeRate = 1000;
+
+	let lightDirection = 20/180*Math.PI;
+	const shootLight = () => {
+		let dir = lightDirection;
+		let [x, y] = points[0];
+		ctx.strokeStyle = '#f70';
+		ctx.beginPath();
+		ctx.moveTo(x, y);
+		let prev = media[0];
+		for (let medium of media) {
+			dir = Math.asin(Math.sin(dir)*prev.index/medium.index);
+			const a = medium.end - y;
+			const b = Math.tan(dir)*a;
+			x += b;
+			y = medium.end;
+			ctx.lineTo(x, y);
+			prev = medium;
+		}
+		ctx.stroke();
+		points[points.length - 1] = [x, y];
+		setEnd(x, y);
+	};
+
+	const drawStraightLine = () => {
+		const [ax, ay] = points[0];
+		const length = width + height;
+		const dx = Math.sin(lightDirection);
+		const dy = Math.cos(lightDirection);
+		const bx = ax + dx*length;
+		const by = ay + dy*length;
+		ctx.strokeStyle = '#fff';
+		ctx.beginPath();
+		ctx.moveTo(ax, ay);
+		ctx.lineTo(bx, by);
+		ctx.stroke();
+	};
+
+	const frame = () => {
+		drawMedia();
+		drawStraightLine();
+		drawPath(currentPath);
+		shootLight();
+		drawPoints();
+		requestAnimationFrame(frame);
+	};
+
+	setInterval(() => {
+		const newPath = currentPath.map(point => point.slice());
+		changePath(newPath, 10);
+		const newTime = calculatePathTime(newPath);
+		if (newTime < currentTime) {
+			currentPath = newPath;
+			currentTime = newTime;
+			changeRate *= 1.5;
+			changeRate = Math.min(changeRate, maxChangeRate);
+			missCount = 0;
+		} else {
+			++ missCount;
+			if (missCount < 10) return;
+			changeRate /= 1.5;
+			changeRate = Math.max(changeRate, minChangeRate);
+			missCount = 0;
+		}
+	}, 0);
+
+	frame();
+
+	canvas.onmousemove = (e) => {
+		const dx = e.offsetX - points[0][0];
+		const dy = e.offsetY - points[0][1];
+		const length = Math.sqrt(dx*dx + dy*dy);
+		lightDirection = Math.asin(dx/length);
+	};
+
+</script>
