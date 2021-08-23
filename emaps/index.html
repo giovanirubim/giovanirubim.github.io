@@ -22,6 +22,7 @@
 		<div>Project as: <select id="dst"></select> <input type="button" value="Project" id="project"/></div>
 		<div>Mouse coord: <span id="coord">0, 0</span></div>
 		<div><input type="text" id="targCoord" placeholder="Coordinates"> <input type="button" value="Target" id="target"></div>
+		<div>Precision: <select id="precision"></select></div>
 		<div>Canvas dimention: <input type="text" id="height"> x <span id="width"></span></div>
 		<div class="canvas">
 			<canvas></canvas>
@@ -64,14 +65,15 @@
 	};
 
 	const drawTarget = (x, y) => {
-		ctx.strokeStyle = '#f00';
-		ctx.lineWidth = 1;
-		ctx.beginPath();
-		ctx.moveTo(x, y - 5);
-		ctx.lineTo(x, y + 5);
-		ctx.moveTo(x - 5, y);
-		ctx.lineTo(x + 5, y);
-		ctx.stroke();
+		lastCtx.clearRect(0, 0, lastCanvas.width, lastCanvas.height);
+		lastCtx.strokeStyle = '#f00';
+		lastCtx.lineWidth = 1;
+		lastCtx.beginPath();
+		lastCtx.moveTo(x, y - 5);
+		lastCtx.lineTo(x, y + 5);
+		lastCtx.moveTo(x - 5, y);
+		lastCtx.lineTo(x + 5, y);
+		lastCtx.stroke();
 	};
 
 	const resizeCanvas = (width, height) => {
@@ -124,8 +126,13 @@
 		}
 		preciseColorAt(x, y) {
 			const colors = [];
-			for (let dx=-1/3; dx<1; dx+=1/3) {
-				for (let dy=-1/3; dy<1; dy+=1/3) {
+			if (precision === 1) {
+				return this.colorAt(x, y);
+			}
+			const step = 1/(precision - 1);
+			const ini = -.5 + step*.5;
+			for (let dx=ini; dx<.5; dx+=step) {
+				for (let dy=ini; dy<.5; dy+=step) {
 					colors.push(this.rawColorAt(x + dx, y + dy));
 				}
 			}
@@ -140,6 +147,7 @@
 			[ nx, ny ] = transform(nx, ny);
 			const tx = normalToCanvasX(nx, tWidth);
 			const ty = normalToCanvasY(ny, tHeight);
+			// const color = this.colorAt(tx, ty);
 			const color = this.preciseColorAt(tx, ty);
 			drawPixel(x, y, color);
 		}
@@ -229,6 +237,65 @@
 				const ndy = dx/radius;
 				const long = fixAngle(getAngle(ndx, ndy));
 				return [ lat, long ];
+			},
+		},
+		sAzimuthal: {
+			name: 'Azimuthal (south)',
+			ratio: 1,
+			toNormal: (lat, long) => {
+				const radius = 0.5 + lat/180;
+				const dx = sin(long)*radius;
+				const dy = cos(long)*radius;
+				return [ dx, dy ];
+			},
+			toCoord: (dx, dy) => {
+				const radius = Math.sqrt(dx*dx + dy*dy);
+				if (radius === 0) return [ -90, 0 ];
+				const lat = radius*180 - 90;
+				const ndx = dy/radius;
+				const ndy = dx/radius;
+				const long = fixAngle(getAngle(ndx, ndy));
+				return [ lat, long ];
+			},
+		},
+		cAzimuthal: {
+			name: 'Azimuthal (custom)',
+			ratio: 1,
+			toNormal: (lat, long) => {
+				let [x, y, z] = coordToXyz(lat, long);
+				const cos_long = cos(- targeted[1]);
+				const sin_long = sin(- targeted[1]);
+				const cos_lat = cos(- targeted[0]);
+				const sin_lat = sin(- targeted[0]);
+				[x, z] = [
+					cos_long*x + sin_long*z,
+					cos_long*z - sin_long*x,
+				];
+				[y, z] = [
+					cos_lat*y + sin_lat*z,
+					cos_lat*z - sin_lat*y,
+				];
+				[y, z] = [z, -y];
+				const coord = xyzToCoord(x, y, z);
+				return maps.nAzimuthal.toNormal(...coord);
+			},
+			toCoord: (nx, ny) => {
+				let [lat, long] = maps.nAzimuthal.toCoord(nx, ny);
+				let [x, y, z] = coordToXyz(lat, long);
+				const cos_long = cos(targeted[1]);
+				const sin_long = sin(targeted[1]);
+				const cos_lat = cos(targeted[0]);
+				const sin_lat = sin(targeted[0]);
+				[y, z] = [-z, y];
+				[y, z] = [
+					cos_lat*y + sin_lat*z,
+					cos_lat*z - sin_lat*y,
+				];
+				[x, z] = [
+					cos_long*x + sin_long*z,
+					cos_long*z - sin_long*x,
+				];
+				return xyzToCoord(x, y, z);
 			},
 		},
 		gallpeters: {
@@ -339,6 +406,16 @@
 			line.end = true;
 		}
 	};
+	lastCanvas.ondblclick = (e) => {
+		const x = e.offsetX;
+		const y = e.offsetY;
+		const nx = canvasToNormalX(x, canvas[0].width);
+		const ny = canvasToNormalY(y, canvas[0].height);
+		targeted = maps[selectDst.value].toCoord(nx, ny);
+		const normal = maps[selectDst.value].toNormal(...targeted);
+		drawTarget(x, y);
+		document.querySelector('#targCoord').value = targeted.join(', ');
+	};
 
 	const maxProjectionArea = 0x1000;
 
@@ -385,11 +462,13 @@
 		project(src, dst);
 	};
 
+	let targeted = [0, 0];
 	document.querySelector('#target').onclick = () => {
 		const coord = document.querySelector('#targCoord')
 			.value
 			.split(/\s*,\s*/)
 			.map(x => Number(x));
+		targeted = coord;
 		const normal = maps[selectDst.value].toNormal(...coord);
 		const [ x, y ] = normalToCanvas(...normal, canvas[0].width, canvas[0].height);
 		drawTarget(x, y);
@@ -470,5 +549,15 @@
 		const xyzDist = calcXyzDist(ax, ay, az, bx, by, bz);
 		return xyzDistToSurfDist(xyzDist);
 	};
+
+	let precision = 1;
+	const selectPrecision = document.querySelector('#precision');
+	selectPrecision.onchange = function () {
+		precision = this.value*1;
+	};
+	selectPrecision.innerHTML = new Array(4)
+		.fill()
+		.map((_,i) => `<option value=${i+1}>${i + 1}</option>`)
+		.join('');
 
 </script>
