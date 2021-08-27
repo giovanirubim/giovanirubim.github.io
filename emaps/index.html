@@ -100,6 +100,9 @@
 		return `rgb(${res})`;
 	};
 
+	;
+
+
 	class ImageController {
 		constructor(image) {
 			const canvas = document.createElement('canvas');
@@ -239,6 +242,18 @@
 				return [ lat, long ];
 			},
 		},
+		mercator: {
+			name: "Mercator",
+			ratio: 1,
+			toNormal: (lat, long) => [
+				long/180,
+				Math.log(tan(45 + lat/2))/Math.PI,
+			],
+			toCoord: (nx, ny) => [
+				(atan(Math.exp((ny)*Math.PI)) - 45)*2,
+				nx*180,
+			],
+		},
 		sAzimuthal: {
 			name: 'Azimuthal (south)',
 			ratio: 1,
@@ -300,7 +315,7 @@
 		},
 		gallpeters: {
 			name: 'Gall-Peters',
-			ratio: 1.571203776553895,
+			ratio: Math.PI/2,
 			toNormal: (lat, long) => {
 				const x = long/180;
 				const y = sin(lat);
