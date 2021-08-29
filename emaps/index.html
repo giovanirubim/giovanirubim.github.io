@@ -14,6 +14,9 @@
 			div {
 				margin-bottom: 5px;
 			}
+			textarea {
+				resize: none;
+			}
 		</style>
 		<title></title>
 	</head>
@@ -28,9 +31,15 @@
 			<canvas></canvas>
 			<canvas></canvas>
 		</div>
+		<div>
+			Apply to OBJ file: <br>
+			<textarea id="objIn"></textarea>
+			<textarea id="objOut"></textarea>
+		</div>
 	</body>
 </html>
 <script type="text/javascript" src="./maps.js"></script>
+<script type="text/javascript" src="./fix-uv.js"></script>
 <script type="text/javascript">
 
 	const canvas = [ ...document.querySelectorAll('canvas') ];
@@ -216,7 +225,7 @@
 		const { width, height } = canvas[0];
 		const aXyz = coordToXyz(a.lat, a.long);
 		const bXyz = coordToXyz(b.lat, b.long);
-		const map = currentDstMap();
+		const map = getDstMap();
 		ctx.clearRect(0, 0, width, height);
 		ctx.strokeStyle = '#000';
 		ctx.beginPath();
@@ -311,8 +320,8 @@
 		return html;
 	}
 
-	const currentSrcMap = () => maps[selectSrc.value];
-	const currentDstMap = () => maps[selectDst.value];
+	const getSrcMap = () => maps[selectSrc.value];
+	const getDstMap = () => maps[selectDst.value];
 
 	const selectHTML = getSelectInnerHTML();
 	const selectSrc = document.querySelector('#src');
@@ -387,5 +396,13 @@
 		.fill()
 		.map((_,i) => `<option value=${i+1}>${i + 1}</option>`)
 		.join('');
+
+	const objIn = document.querySelector('#objIn');
+	const objOut = document.querySelector('#objOut');
+	objIn.onchange = () => {
+		objOut.value = fixUv(objIn.value, getDstMap().toNormal);
+		objOut.focus();
+		objOut.select();
+	};
 
 </script>
