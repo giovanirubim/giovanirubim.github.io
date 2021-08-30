@@ -25,7 +25,10 @@
 		<div>Project as: <select id="dst"></select> <input type="button" value="Project" id="project"/></div>
 		<div>Mouse coord: <span id="coord">0, 0</span></div>
 		<div><input type="text" id="targCoord" placeholder="Coordinates"> <input type="button" value="Target" id="target"></div>
-		<div>Precision: <select id="precision"></select></div>
+		<div>
+			Precision: <select id="precision"></select>
+			Custom azimuthal zoom <input id="zoom" type="text" value="1"/>
+		</div>
 		<div>Canvas dimention: <input type="text" id="height"> x <span id="width"></span></div>
 		<div class="canvas">
 			<canvas></canvas>
@@ -337,6 +340,7 @@
 	};
 
 	let targeted = [0, 0];
+	let customZoom = 1;
 	document.querySelector('#target').onclick = () => {
 		const coord = document.querySelector('#targCoord')
 			.value
@@ -403,6 +407,11 @@
 		objOut.value = fixUv(objIn.value, getDstMap().toNormal);
 		objOut.focus();
 		objOut.select();
+	};
+
+	const zoomImput = document.querySelector('#zoom');
+	zoomImput.onchange = () => {
+		customZoom = Number(zoomImput.value);
 	};
 
 </script>

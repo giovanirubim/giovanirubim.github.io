@@ -83,10 +83,11 @@ const maps = {
 			];
 			[y, z] = [z, -y];
 			const coord = xyzToCoord(x, y, z);
-			return maps.nAzimuthal.toNormal(...coord);
+			const [nx, ny] = maps.nAzimuthal.toNormal(...coord);
+			return [nx*customZoom, ny*customZoom];
 		},
 		toCoord: (nx, ny) => {
-			let [lat, long] = maps.nAzimuthal.toCoord(nx, ny);
+			let [lat, long] = maps.nAzimuthal.toCoord(nx/customZoom, ny/customZoom);
 			let [x, y, z] = coordToXyz(lat, long);
 			const cos_long = cos(targeted[1]);
 			const sin_long = sin(targeted[1]);
