@@ -25,7 +25,7 @@
 	const marginTop = 20;
 	const marginLeft = 20;
 	const marginRight = 20;
-	const marginBottom = 120;
+	const marginBottom = 150;
 	const chartWidth = 500;
 	const chartHeight = 500;
 
@@ -57,7 +57,21 @@
 	};
 
 	const maxXVal = 1e7;
-	const maxYVal = 1e7;
+
+	const formulas = [
+		[SdToH1, R*PI/2*.9999, '#07f'],
+		[HdToH1, maxXVal, '#0c2'],
+		[SdToH2, R*PI/2*.9999, '#f70'],
+		[HdToH2, R*.9999, '#f00'],
+		[funFE, maxXVal, '#70f'],
+		[sagitta, maxXVal, '#aaa'],
+	];
+
+	const minMax = formulas.slice().sort((a, b) => a[1] - b[1])[0][1];
+	const maxYVal = (formulas
+		.map(([f]) => f(minMax))
+		.sort((a, b) => b - a)[0]*1.6)
+		.toPrecision(1)*1;
 
 	const xPxToNormal = (x) => (x - left)/chartWidth;
 	const normalToXPx = (n) => left + n*chartWidth;
@@ -107,15 +121,27 @@
 
 	ctx.textBaseline = 'top';
 	ctx.font = '14px monospace';
-	drawFormula(SdToH1, R*PI/2*.9999, '#07f');
-	drawFormula(HdToH1, maxXVal, '#0c2');
-	drawFormula(SdToH2, R*PI/2*.9999, '#f70');
-	drawFormula(HdToH2, R*.9999, '#f00');
-	drawFormula(funFE, maxXVal, '#70f');
+
+	formulas.forEach((arg) => drawFormula(...arg));
 
 	ctx.lineWidth = 1;
 	ctx.strokeStyle = '#aaa';
 	drawAxis();
+
+	canvas.onmousemove = (e) => {
+		let x = e.offsetX;
+		let n = xPxToNormal(x);
+		if (n < 0 || n > 1) {
+			return;
+		}
+		x = xPxToVal(x);
+		console.clear();
+		formulas.forEach((arg) => {
+			const [fn, max] = arg;
+			if (x > max) return;
+			console.log(`${fn.name}: ${fn(x).toPrecision(5)*1}`);
+		});
+	};
 
 </script>
 

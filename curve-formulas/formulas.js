@@ -63,12 +63,15 @@ const inToM = 0.0254;
 const mToIn = 1/inToM;
 const miToM = 1609.344;
 const mToMi = 1/miToM;
+const mToFt = 3.28084;
+const ftToM = 1/mToFt;
 
 const HdToH1 = (Hd) => (sqrt(4*(R*R + Hd*Hd)))/2 - R;
 const SdToH1 = (Sd) => HdToH1(Math.tan(Sd/R)*R);
 const HdToH2 = (Hd) => R*(1 - Math.cos(Math.asin(Hd/R)));
 const SdToH2 = (Sd) => R*(1 - Math.cos(Sd/R));
 const funFE = (x) => sqr(x*mToMi)*8*inToM;
+const sagitta = (sd) => (1 - Math.cos(sd/R/2))*R;
 
 const units = [
 
