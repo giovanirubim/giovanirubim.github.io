@@ -6,14 +6,19 @@
 		<style type="text/css">
 			body {
 				background-color: #eee;
+				font-family: monospace;
 			}
 			canvas {
-				box-shadow: -5px 5px 15px #ccc;
+				box-shadow: -5px 5px 15px rgba(0, 0, 0, 0.1);
 			}
 		</style>
 	</head>
 	<body>
+		<div>
+			X Limit: <input type="range" min="0" max="1" value="1" step="any"/>
+		</div>
 		<canvas width="540" height="640"></canvas>
+		<div id="values"></div>
 	</body>
 </html>
 <script type="text/javascript" src="formulas.js"></script>
@@ -37,6 +42,13 @@
 	const right = left + chartWidth;
 	const bottom = top2 + chartHeight;
 
+	const logScale = (min, max, val) => {
+		const log_a = Math.log(min);
+		const log_b = Math.log(max);
+		const log = log_a + (log_b - log_a)*val;
+		return Math.exp(log);
+	};
+
 	const drawAxis = () => {
 		const x0 = left + 0.5;
 		const y0 = top2 + 0.5;
@@ -56,22 +68,27 @@
 		ctx.fillText(toStr(maxXVal), right, bottom);
 	};
 
-	const maxXVal = 1e7;
+	let maxXVal = 1e7;
+	let formulas = [];
+	let maxYVal;
 
-	const formulas = [
-		[SdToH1, R*PI/2*.9999, '#07f'],
-		[HdToH1, maxXVal, '#0c2'],
-		[SdToH2, R*PI/2*.9999, '#f70'],
-		[HdToH2, R*.9999, '#f00'],
-		[funFE, maxXVal, '#70f'],
-		[sagitta, maxXVal, '#aaa'],
-	];
+	function updateConsts() {
+		formulas = [
+			[sToPl, R*PI/2*.9999, '#07f'],
+			[hToPl, maxXVal, '#0c2'],
+			[sToPe, R*PI/2*.9999, '#f70'],
+			[hToPe, R*.9999, '#f00'],
+			[funFE, maxXVal, '#70f'],
+			[sagitta, maxXVal, '#aaa'],
+		];
+		minMax = formulas.slice().sort((a, b) => a[1] - b[1])[0][1];
+		maxYVal = (formulas
+			.map(([f]) => f(minMax))
+			.sort((a, b) => b - a)[0]*1.6)
+			.toPrecision(1)*1;
+	}
 
-	const minMax = formulas.slice().sort((a, b) => a[1] - b[1])[0][1];
-	const maxYVal = (formulas
-		.map(([f]) => f(minMax))
-		.sort((a, b) => b - a)[0]*1.6)
-		.toPrecision(1)*1;
+	updateConsts();
 
 	const xPxToNormal = (x) => (x - left)/chartWidth;
 	const normalToXPx = (n) => left + n*chartWidth;
@@ -87,11 +104,8 @@
 	const yValToPx = (y) => normalToYPx(yValToNormal(y));
 	const yPxToVal = (y) => normalToYVal(yPxToNormal(y));
 
-	const steps = 500;
-	let subY = bottom + 10;
-	let subX = left + 10;
-	let lineSpace = 20;
-	const drawFormula = (fn, endXVal, color) => {
+	const drawFormula = (fn, endXVal, color, x, y) => {
+		const steps = 500;
 		endXVal = Math.min(endXVal, maxXVal);
 		const xPx0 = xValToPx(0);
 		const xPx1 = xValToPx(endXVal);
@@ -112,22 +126,34 @@
 		}
 		ctx.stroke();
 		ctx.fillStyle = color;
-		ctx.fillText(fn.name + ' = ' + fn, subX, subY);
-		subY += lineSpace;
+		ctx.textAlign = 'left';
+		ctx.fillText(fn.name + ' = ' + fn, x, y);
 	};
 
-	ctx.fillStyle = '#fff';
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	const render = () => {
 
-	ctx.textBaseline = 'top';
-	ctx.font = '14px monospace';
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-	formulas.forEach((arg) => drawFormula(...arg));
+		ctx.fillStyle = '#fff';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-	ctx.lineWidth = 1;
-	ctx.strokeStyle = '#aaa';
-	drawAxis();
+		ctx.textBaseline = 'top';
+		ctx.font = '14px monospace';
 
+		let subY = bottom + 10;
+		let subX = left + 10;
+		let lineSpace = 20;
+		formulas.forEach((arg) => {
+			drawFormula(...arg, subX, subY);
+			subY += lineSpace;
+		});
+
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = '#aaa';
+		drawAxis();
+	};
+
+	const values = document.querySelector('#values');
 	canvas.onmousemove = (e) => {
 		let x = e.offsetX;
 		let n = xPxToNormal(x);
@@ -135,12 +161,25 @@
 			return;
 		}
 		x = xPxToVal(x);
-		console.clear();
+		let html = '';
 		formulas.forEach((arg) => {
 			const [fn, max] = arg;
-			if (x > max) return;
-			console.log(`${fn.name}: ${fn(x).toPrecision(5)*1}`);
+			if (x <= max) {
+				html += `${fn.name}: ${toStr(fn(x).toPrecision(3)*1)}<br/>`;
+			} else {
+				html += `${fn.name}: -<br/>`;
+			}
 		});
+		values.innerHTML = html;
+	};
+
+	render();
+
+	document.querySelector('input[type="range"]').oninput = function() {
+		const value = this.value*1;
+		maxXVal = logScale(10, 1e7, value).toPrecision(1)*1;
+		updateConsts();
+		render();
 	};
 
 </script>
