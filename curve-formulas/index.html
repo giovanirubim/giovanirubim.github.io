@@ -161,13 +161,14 @@
 			return;
 		}
 		x = xPxToVal(x);
+		const xs = toStr(x);
 		let html = '';
 		formulas.forEach((arg) => {
 			const [fn, max] = arg;
 			if (x <= max) {
-				html += `${fn.name}: ${toStr(fn(x).toPrecision(3)*1)}<br/>`;
+				html += `${fn.name}(${xs}) = ${toStr(fn(x).toPrecision(3)*1)}<br/>`;
 			} else {
-				html += `${fn.name}: -<br/>`;
+				html += `${fn.name}(${xs}) = -<br/>`;
 			}
 		});
 		values.innerHTML = html;
