@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title></title>
+		<style type="text/css">
+			* {
+				font-family: monospace;
+			}
+			body {
+				background-color: #222;
+				text-align: center;
+				margin-top: 20px;
+			}
+			textarea {
+				border: 1px solid #666;
+				background-color: #333;
+				border-radius: 2px;
+				padding: 10px;
+				color: #ddd;
+				width: 400px;
+				height: 210px;
+				resize: none;
+			}
+			#paper {
+				background-color: #edc;
+				color: rgba(0, 0, 0, 0.8);
+				font-family: 'Indie Flower', cursive;
+				font-size: 20px;
+				padding: 10px 20px;
+				width: 400px;
+				margin: 20px auto 0px auto;
+			}
+		</style>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
+		<script type="text/javascript" src="./math.js"></script>
+	</head>
+	<body>
+		<form spellcheck="false">
+			<textarea></textarea>
+		</form>
+		<div id="paper">
+		</div>
+  	</body>
+</html>
+<script type="text/javascript">
+	const example = `
+		Star: Antares
+		Time: 2022-01-15 00:57:38 UTC-4
+		RA/DEC: 16h30m43.64s / -26 28 43.2
+		ALT: 50.868722
+
+		Star: Arcturus
+		Time: 2022-01-15 01:07:06 UTC-4
+		RA/DEC: 14h16m39.27s / 19.06511
+		ALT: +35°50'16"
+
+		Star: Vega
+		Time: 2022-01-15 01:13:20 UTC-4
+		RA/DEC: 18h37m38.64s / 38°48'09.5"
+		ALT: 58 15 35.4
+	`.trim().replace(/[\t\x20]*\n[\t\x20]*/g, '\n');
+
+	const textarea = document.querySelector('textarea');
+	textarea.value = example;
+
+	const paper = document.querySelector('#paper');
+	const addLine = (line) => {
+		paper.innerText += line;
+		paper.innerHTML += '<br>';
+	};
+
+	const solve = () => {
+		paper.innerHTML = '';
+		let star = null;
+		const stars = [];
+		const lines = textarea.value.trim().split(/\s*\n\s*/)
+		for (let line of lines) {
+			const [, field, value ] = line.toLowerCase().match(/^(.*?)\s*:\s*(.*)$/);
+			if (field === 'star') {
+				star = { name: value };
+				stars.push(star);
+				continue;
+			}
+			if (field === 'time') {
+				const str = value
+					.replace(/utc/i, '')
+					.replace(/\s+/g, '\x20');
+				star.time = new Date(str);
+				continue;
+			}
+			if (field === 'ra/dec') {
+				let [ ra, dec ] = value.split(/\s*\/\s*/).map(parseAngle);
+				star.ra = ra;
+				star.dec = dec;
+				continue;
+			}
+			if (field === 'alt') {
+				star.alt = parseAngle(value.trim());
+				continue;
+			}
+		}
+		let args = {};
+		for (let i=0; i<stars.length; ++i) {
+			const star = stars[i];
+			const { ra, dec: lat, time, name } = star;
+			if (paper.innerText) {
+				paper.innerHTML += '<br>';
+			}
+			addLine(`* ${name.toUpperCase()}`)
+			const long = calcLongitude(time, ra);
+			paper.innerText += `GP = ${lat.toPrecision(8)}, ${long.toPrecision(8)}`
+			paper.innerHTML += '<br>';
+			const alt = star.alt.toPrecision(6);
+			const angle = (90 - star.alt).toPrecision(6);
+			const nm = (90 - star.alt)*60;
+			const meters = nm*NM_TO_M;
+			addLine(`ALT = ${alt}° // 90 - ${alt} = ${angle}`);
+			addLine(`${angle}*60 NM = ${nm.toPrecision(8)} NM = ${(nm*NM_TO_MI).toPrecision(8)} MI`);
+			args[`p${i+1}`] = [ lat, long ];
+			args[`d${i+1}`] = meters;
+		}
+		addLine('');
+		const [ lat, long ] = sphereTrilateration(args).map(x => x*TO_DEG);
+		addLine(`TRILATERATION RESULT = ${lat.toPrecision(7)*1}, ${long.toPrecision(7)*1}`);
+	};
+
+	solve();
+
+	textarea.oninput = () => {
+		try {
+			solve();
+		} catch(err) {
+			addLine('');
+			addLine('Ops, something wrong with the input data');
+		}
+	};
+
+</script>
