@@ -150,23 +150,17 @@ const sphereTrilateration = ({ p1, d1, p2, d2, p3, d3 }) => {
 	return findMinErrorCoord(calcError);
 };
 
-// Target: -25.493107248527046, -54.54828245953229
-// - Name: Acrux
-//   Time: 2022-01-16 00:10:45 -4
-//   Alt: 34 34 12.4
-//   RA/DEC: 12h27m49.90s / -63°12'53.8"
-//   GP: -63.21494444444445, 8.686953550845942
-//   Distance: 6159369
-// - Name: Betelgeuse
-//   Time: 2022-01-16 00:20:02 -4
-//   Alt: 41 16 53.8
-//   RA/DEC: 5h56m22.35s/+7 24 35.6
-//   GP: 7.409888888888889, -91.50502568023978
-//   Distance: 5413587
-// - Name: Canopus
-//   Time: 2022-01-16 00:28:54 -4
-//   Alt: +53 38 54.6
-//   RA/DEC: 6h24m28.25s / -52 42 32.6
-//   GP: -52.70905555555556, -86.70317804577718
-//   Distance: 4039378
+// Star: Betelgeuse
+// Time: 2022-01-17 00:16:08 UTC-3
+// RA/DEC: 5h56m22.35s / 7 24 35.6
+// ALT: 90
 
+// Star: Capella
+// Time: 2022-01-17 00:16:08 UTC-3
+// RA/DEC: 5h18m19.80s / 46 01 13.7
+// ALT: 90
+
+// Star: Aldebaran
+// Time: 2022-01-17 00:16:08 UTC-3
+// RA/DEC: 4h37m11.35s/+16°33'09.3"
+// ALT: 90
