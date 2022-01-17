@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<style type="text/css">
+			body {
+				font-family: monospace;
+				color: #fff;
+				background-color: #333;
+			}
+			canvas {
+				background-color: #222;
+			}
+			.view {
+				display: inline-block;
+				margin-top: 10px;
+			}
+			.view > div {
+				margin-bottom: 5px;
+			}
+			input {
+				width: 350px;
+			}
+		</style>
+		<title></title>
+	</head>
+	<body>
+		<input type="range" min="0" max="90" value="45">
+		<br>
+		<div class="view">
+			<div>Globe earth sextant:</div>
+			<canvas width="370" height="600"></canvas>
+		</div>
+		<div class="view">
+			<div>Flat earth sextant:</div>
+			<canvas width="450" height="290"></canvas>
+		</div>
+	</body>
+</html>
+<script type="text/javascript">
+
+	let angle = 45/180*Math.PI;
+	let fullLength = 250;
+
+	const sightLength = fullLength;
+	const arcRad = 25;
+	const lineLength = 75;
+	const square = 10;
+	const border = 10;
+	const rad = fullLength*4/(Math.PI*2);
+	const bindings = [];
+
+	const getCavnas = (index) => {
+		const canvas = [ ...document.querySelectorAll('canvas') ][index];
+		const { width, height } = canvas;
+		const ctx = canvas.getContext('2d');
+		return { canvas, ctx, width, height };
+	};
+
+	const bindCanvas = (index, render) => {
+		const obj = getCavnas(index);
+		bindings.push(() => render(obj));
+		render(obj);
+	};
+
+	document.querySelector('input').oninput = function() {
+		angle = this.value/180*Math.PI;
+		bindings.forEach(fn => fn());
+	};
+
+	const drawSpot = (ctx, x, y) => {
+		ctx.fillStyle = '#fff';
+		ctx.beginPath();
+		ctx.arc(x, y, 2, 0, Math.PI*2);
+		ctx.fill();
+	};
+
+	const drawObserver = (ctx, x, y, rotation) => {
+		ctx.save();
+		ctx.translate(x, y);
+		ctx.rotate(rotation);
+		ctx.beginPath();
+		ctx.moveTo(-lineLength, 0);
+		ctx.lineTo(lineLength, 0);
+		ctx.moveTo(0, 0);
+		ctx.lineTo(0, -lineLength);
+		ctx.moveTo(0, -square);
+		ctx.lineTo(square, -square);
+		ctx.lineTo(square, 0);
+		ctx.strokeStyle = '#aaa';
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.arc(0, 0, arcRad, Math.PI + (Math.PI/2 - angle), Math.PI*1.5);
+		ctx.stroke();
+		ctx.fillStyle = '#aaa';
+		ctx.beginPath();
+		ctx.arc(square*0.5, square*-0.5, 1, 0, Math.PI*2);
+		ctx.fill();
+		ctx.beginPath();
+		ctx.moveTo(0, 0);
+		ctx.lineTo(
+			- Math.cos(Math.PI/2 - angle)*sightLength,
+			- Math.sin(Math.PI/2 - angle)*sightLength,
+		);
+		ctx.strokeStyle = '#f00';
+		ctx.stroke();
+		const dx = - Math.sin(angle/2)*arcRad;
+		const dy = - Math.cos(angle/2)*arcRad;
+		ctx.fillStyle = '#fff';
+		ctx.textAlign = 'right';
+		ctx.fillText((angle/Math.PI*180).toFixed(1) + '°', dx, dy);
+		ctx.restore();
+	};
+
+	const drawLine = (ctx, x, y) => {
+		const x0 = x - fullLength/2;
+		ctx.beginPath();
+		ctx.moveTo(x0, y);
+		ctx.lineTo(x + fullLength/2, y);
+		ctx.moveTo(x0, y - border/2);
+		ctx.lineTo(x0, y + border/2);
+		ctx.moveTo(x + fullLength/2, y - border/2);
+		ctx.lineTo(x + fullLength/2, y + border/2);
+		ctx.strokeStyle = '#777';
+		ctx.stroke();
+		const offset = angle/(Math.PI/2)*fullLength;
+		drawObserver(ctx, x0 + offset, y, 0);
+		const height = offset/Math.tan(angle);
+		drawSpot(ctx, x0, y - height);
+	};
+
+	const drawCurve = (ctx, x, y) => {
+		ctx.beginPath();
+		ctx.arc(x, y, rad, Math.PI*1.5, Math.PI*2);
+		ctx.moveTo(x, y - rad - border/2);
+		ctx.lineTo(x, y - rad + border/2);
+		ctx.moveTo(x + rad - border/2, y);
+		ctx.lineTo(x + rad + border/2, y);
+		ctx.strokeStyle = '#777';
+		ctx.stroke();
+		const ox = x + Math.sin(angle)*rad;
+		const oy = y - Math.cos(angle)*rad;
+		drawObserver(ctx, ox, oy, angle);
+	};
+
+	bindCanvas(0, ({ ctx, width, height }) => {
+		ctx.clearRect(0, 0, width, height);
+		drawCurve(ctx, 90, height - 90);
+	});
+
+	bindCanvas(1, ({ ctx, width, height }) => {
+		ctx.clearRect(0, 0, width, height);
+		drawLine(ctx, width/2, height - 20);
+	});
+
+</script>
