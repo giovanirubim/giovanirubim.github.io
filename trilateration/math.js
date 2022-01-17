@@ -45,7 +45,7 @@ const parseAngle = (arg) => {
 		str = str.substring(1);
 		signal = -1;
 	}
-	const split = str.split(/\s+|['"°]|[a-z]+/).map(x => x || '0');
+	const split = str.split(/['"°]|\s*[a-z]+\s*|\s+/).map(x => x || '0');
 	const parsed = split.map((x, i) => x*Math.pow(60, -i));
 	const rawValue = parsed.reduce((a, b) => a + b);
 	if (/^\d+\s*h/i.test(src)) {
@@ -149,18 +149,3 @@ const sphereTrilateration = ({ p1, d1, p2, d2, p3, d3 }) => {
 	};
 	return findMinErrorCoord(calcError);
 };
-
-// Star: Betelgeuse
-// Time: 2022-01-17 00:16:08 UTC-3
-// RA/DEC: 5h56m22.35s / 7 24 35.6
-// ALT: 90
-
-// Star: Capella
-// Time: 2022-01-17 00:16:08 UTC-3
-// RA/DEC: 5h18m19.80s / 46 01 13.7
-// ALT: 90
-
-// Star: Aldebaran
-// Time: 2022-01-17 00:16:08 UTC-3
-// RA/DEC: 4h37m11.35s/+16°33'09.3"
-// ALT: 90

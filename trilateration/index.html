@@ -11,48 +11,77 @@
 			body {
 				background-color: #222;
 				text-align: center;
-				margin-top: 20px;
+				margin-top: 0px;
 			}
 			textarea {
-				border: 1px solid #666;
-				background-color: #333;
+				border: none;
+				background-color: #202020;
 				border-radius: 2px;
 				padding: 10px;
 				color: #ddd;
 				width: 400px;
-				height: 210px;
+				height: 220px;
 				resize: none;
+				margin: 0px;
 			}
 			#paper {
 				background-color: #edc;
 				color: rgba(0, 0, 0, 0.8);
-				/*font-family: 'Indie Flower', cursive;*/
 				font-family: 'Architects Daughter', cursive;
+				font-weight: bold;
 				font-size: 18px;
 				padding: 10px 20px;
-				width: 400px;
-				margin: 20px auto 0px auto;
+				margin-top: 10px;
+				box-shadow: -5px 5px 20px #000;
+			}
+			.option {
+				margin-top: 10px;
+				color: #aaa;
+			}
+			#main {
+				width: 450px;
+				text-align: center;
+				margin: 0px auto 0px auto;
+				padding: 30px;
+				margin: 20px auto;
+				background-color: #333;
+				border: 1px solid #555;
+			}
+			#title {
+				margin-top: 20px;
+				color: #ccc;
+				font-size: 32px;
+				font-family: 'Architects Daughter', cursive;
 			}
 		</style>
-		<!-- <link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet"> -->
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
 		<script type="text/javascript" src="./math.js"></script>
 	</head>
 	<body>
-		<form spellcheck="false">
-			<textarea></textarea>
-		</form>
-		<div id="paper">
+		<div id="title">
+			Sextant Trilateration
+		</div>
+		<div id="main">
+			<form spellcheck="false">
+				<textarea></textarea>
+			</form>
+			<div class="option">
+				Use decimals: <input type="checkbox" name="decimals">
+			</div>
+			<div id="paper"></div>
 		</div>
   	</body>
 </html>
 <script type="text/javascript">
 
+	let usingDecimals = false;
+
 	const stringifyDegree = (degree) => {
+		if (usingDecimals) {
+			return degree.toFixed(6)*1 + '';
+		}
 		let neg = degree < 0;
 		let total = Math.abs(degree) * 3600;
 		let sec = total % 60;
@@ -65,6 +94,9 @@
 	const stringifyCoord = (lat, long) => {
 		lat = stringifyDegree(lat);
 		long = stringifyDegree(long);
+		if (usingDecimals) {
+			return `${lat}, ${long}`;
+		}
 		if (lat.startsWith('-')) {
 			lat = lat.replace(/^-/, '') + 'S';
 		} else {
@@ -109,12 +141,13 @@
 	const solve = () => {
 		paper.innerHTML = '';
 		let star = null;
+		let time = undefined;
 		const stars = [];
 		const lines = textarea.value.trim().split(/\s*\n\s*/)
 		for (let line of lines) {
 			const [, field, value ] = line.toLowerCase().match(/^(.*?)\s*:\s*(.*)$/);
 			if (field === 'star') {
-				star = { name: value };
+				star = { name: value, time };
 				stars.push(star);
 				continue;
 			}
@@ -122,7 +155,7 @@
 				const str = value
 					.replace(/utc/i, '')
 					.replace(/\s+/g, '\x20');
-				star.time = new Date(str);
+				time = star.time = new Date(str);
 				continue;
 			}
 			if (field === 'ra/dec') {
@@ -147,7 +180,7 @@
 			const long = calcLongitude(time, ra);
 			addLine(`GP = ${stringifyCoord(lat, long)}`);
 			const alt = star.alt.toFixed(4)*1;
-			const angle = 90 - alt;
+			const angle = (90 - alt).toFixed(4)*1;
 			addLine(`ALT = ${alt}° // 90° - ${alt}° = ${angle}°`);
 			const nm = (90 - star.alt)*60;
 			const meters = nm*NM_TO_M;
@@ -169,6 +202,11 @@
 			addLine('');
 			addLine('Ops, something wrong with the input data');
 		}
+	};
+
+	document.querySelector('[name="decimals"]').oninput = function() {
+		usingDecimals = this.checked;
+		solve();
 	};
 
 </script>
