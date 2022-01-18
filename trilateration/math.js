@@ -15,7 +15,7 @@ const NM_TO_M = 1852;
 const M_TO_NM = 1/NM_TO_M;
 const MI_TO_NM = MI_TO_M/NM_TO_M;
 const NM_TO_MI = NM_TO_M/MI_TO_M;
-const ALIGN_TIME = new Date('2022-01-14T16:23:32.7Z');
+const ALIGN_TIME = new Date('2022-07-01 05:23:00 +0');
 const SID_DAY = 86164.09053820801;
 const STARS = {
 	acrux: [ -173.0399166666666, -63.22683333333334 ],
