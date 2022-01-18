@@ -141,11 +141,14 @@ const findMinErrorCoord = (calcError, iterations = 40) => {
 
 const sphereTrilateration = ({ p1, d1, p2, d2, p3, d3 }) => {
 	[ p1, p2, p3 ] = [ p1, p2, p3 ].map(pair => pair.map(x => x*TO_RAD));
+	const a1 = Math.abs(d1);
+	const a2 = Math.abs(d2);
+	const a3 = Math.abs(d3);
 	const calcError = (coord) => {
 		const e1 = calcSphereDistance(coord, p1) - d1;
 		const e2 = calcSphereDistance(coord, p2) - d2;
 		const e3 = calcSphereDistance(coord, p3) - d3;
-		return e1*e1 + e2*e2 + e3*e3;
+		return e1*e1/a1 + e2*e2/a2 + e3*e3/a3;
 	};
 	return findMinErrorCoord(calcError);
 };
