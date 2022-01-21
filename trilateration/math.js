@@ -17,9 +17,6 @@ const MI_TO_NM = MI_TO_M/NM_TO_M;
 const NM_TO_MI = NM_TO_M/MI_TO_M;
 const ALIGN_TIME = new Date('2022-07-01 05:23:00 +0');
 const SID_DAY = 86164.09053820801;
-const STARS = {
-	acrux: [ -173.0399166666666, -63.22683333333334 ],
-};
 
 Array.prototype.cs = function() { return this.map(x => x*TO_DEG).join(', '); };
 
@@ -27,34 +24,6 @@ const calcLongitude = (time, ra) => {
 	const shift = (ALIGN_TIME - time)/1000/SID_DAY%1*360;
 	const angle = ra + shift;
 	return (angle%360 + 360 + 180)%360 - 180;
-};
-
-const parseAngle = (arg) => {
-	const src = ('' + arg).trim();
-	let str = src;
-	let signal = 1;
-	const nsew = /(^[NSEWnsew])|([NSEWnew]$)/g;
-	const sw = /(^[SWsw])|([SWw]$)/g;
-	if (nsew.test(str)) {
-		if (sw.test(str)) {
-			signal = -1;
-		}
-		str = str.replace(nsew).trim();
-	}
-	if (str.startsWith('-')) {
-		str = str.substring(1);
-		signal = -1;
-	}
-	const split = str.split(/['"°]|\s*[a-z]+\s*|\s+/).map(x => x || '0');
-	const parsed = split.map((x, i) => x*Math.pow(60, -i));
-	const rawValue = parsed.reduce((a, b) => a + b);
-	if (/^\d+\s*h/i.test(src)) {
-		let angle = rawValue/24*360;
-		const res = (angle*signal%360 + 180)%360 - 180;
-		if (res === -180) return 180;
-		return res;
-	}
-	return rawValue*signal;
 };
 
 const coord = (lat, long) => [ lat*TO_RAD, long*TO_RAD ];
@@ -95,12 +64,20 @@ const calcSphereDistance = (a, b) => {
 		sphereCoordToEuclidian(a),
 		sphereCoordToEuclidian(b),
 	);
-	const arc = chordToArchRadians(chord, AV_RAD);
+	const arc = chordToArcRadians(chord, AV_RAD);
 	return arc*AV_RAD;
 };
 
-const chordToArchRadians = (chord, radius) => {
+const chordToArcRadians = (chord, radius) => {
 	return Math.asin(chord/radius/2)*2;
+};
+
+const arcRadiansToChord = (arc, radius) => {
+	return Math.sin(arc/2)*radius*2;
+};
+
+const arcRadiansToHump = (arc, radius) => {
+	return radius*(1 - Math.cos(arc/2));
 };
 
 const euclidianToSphereCoord = ([ x, y, z ]) => {
@@ -139,13 +116,26 @@ const findMinErrorCoord = (calcError, iterations = 40) => {
 	return currentCoord;
 };
 
-const sphereTrilateration = ({ p1, d1, p2, d2, p3, d3 }) => {
-	[ p1, p2, p3 ] = [ p1, p2, p3 ].map(pair => pair.map(x => x*TO_RAD));
+const calcErrorFn = (args) => {
+	const p = args.map(data => data.gp.map(val => val*TO_RAD));
+	const d = args.map(data => data.distance);
 	const calcError = (coord) => {
-		const e1 = calcSphereDistance(coord, p1) - d1;
-		const e2 = calcSphereDistance(coord, p2) - d2;
-		const e3 = calcSphereDistance(coord, p3) - d3;
-		return e1*e1 + e2*e2 + e3*e3;
+		let sum = 0;
+		for (let i=args.length; i--;) {
+			const error = calcSphereDistance(coord, p[i]) - d[i];
+			sum += error*error;
+		}
+		return sum;
 	};
-	return findMinErrorCoord(calcError);
+	return calcError;
+};
+
+const getCircleOfEqualAltitude = (center, altitude, numberOfPoints) => {
+	const angleStep = Math.PI*2/numberOfPoints;
+	const arc = QUART_CIRC - altitude;
+	for (let i=0; i<=numberOfPoints; ++i) {
+		const angle = i*angleStep;
+		const sin = Math.sin(angle);
+		const cos = Math.cos(angle);
+	}
 };
