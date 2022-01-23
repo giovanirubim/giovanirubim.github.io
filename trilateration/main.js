@@ -221,7 +221,10 @@ const processStar = (star) => {
 
 const doCalculations = () => {
 	args.length = 0;
-	const lines = inputData.value.toLowerCase().trim().split(/\s*\n\s*/);
+	let lines = inputData.value.toLowerCase().trim().split(/\s*\n\s*/);
+	if (lines.length === 1 && lines[0] === '') {
+		lines = [];
+	}
 	let current_star = null;
 	let current_time = null;
 	const stars = [];
@@ -243,7 +246,7 @@ const doCalculations = () => {
 			continue;
 		}
 		if (field === 'time') {
-			current_star.time = value;
+			current_star.time = current_time = value;
 			continue;
 		}
 		if (field === 'alt') {
@@ -252,13 +255,17 @@ const doCalculations = () => {
 		}
 		throw `Unknown field "${field}"`;
 	}
-	processStar(current_star);
-	const result = trilaterate(args);
-	addPaperLine(`result = ${
-		strLat(result[0]*RAD_TO_DEG)
-	}, ${
-		strLong(result[1]*RAD_TO_DEG)
-	}`)
+	if (current_star != null) {
+		processStar(current_star);
+	}
+	if (args.length >= 3) {
+		const result = trilaterate(args);
+		addPaperLine(`result = ${
+			strLat(result[0]*RAD_TO_DEG)
+		}, ${
+			strLong(result[1]*RAD_TO_DEG)
+		}`)
+	}
 };
 
 const project = (lat, long) => [
