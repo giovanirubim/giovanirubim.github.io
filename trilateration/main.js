@@ -1,14 +1,15 @@
 import * as Almanac from './almanac.js';
+import * as Maps from './maps.js';
 import { trilaterate, getCoordCircle } from './math.js';
-import loadImage from './load-image.js';
 
 let inputData;
-let paper;
 let inputDecimals;
-let useDecimals = false;
+let inputProjection;
+let paper;
 let canvas;
 let ctx;
-let imagePromise = loadImage('./texture.jpg');
+let useDecimals = false;
+let [ currentMap ] = Maps.all;
 
 const args = [];
 const NM_TO_MI = 1852/1609.344;
@@ -268,10 +269,10 @@ const doCalculations = () => {
 	}
 };
 
-const project = (lat, long) => [
-	(long/(Math.PI*2) + 0.5)*canvas.width,
-	(0.5 - (lat/Math.PI))*canvas.height,
-];
+const project = (lat, long) => {
+	const [ nx, ny ] = currentMap.coordToNormal(lat, long);
+	return [ nx*canvas.width, ny*canvas.height ];
+};
 
 const makeSpotAt = (lat, long) => {
 	const [ x, y ] = project(lat, long);
@@ -285,7 +286,7 @@ const makeSpotAt = (lat, long) => {
 };
 
 const makeCircle = (lat, long, arc) => {
-	const points = getCoordCircle(lat, long, arc);
+	const points = getCoordCircle(lat, long, arc, 128);
 	ctx.beginPath();
 	for (let i=0; i<points.length; ++i) {
 		const [ lat, long ] = points[i];
@@ -297,15 +298,15 @@ const makeCircle = (lat, long, arc) => {
 		}
 	}
 	ctx.closePath();
-	ctx.lineWidth = 1;
-	ctx.strokeStyle = '#000';
-	ctx.fillStyle = 'rgba(0, 127, 255, 0.2)';
+	ctx.lineWidth = 0.5;
+	ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
+	ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
 	ctx.lineJoin = 'round';
 	ctx.fill();
 	ctx.stroke();
 };
 
-const updateMap = () => imagePromise.then(img => {
+const updateMap = () => currentMap.getImage().then(img => {
 	const height = canvas.width/img.width*img.height;
 	canvas.height = height;
 	ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -343,6 +344,14 @@ window.addEventListener('load', async () => {
 	inputDecimals.onchange = () => {
 		useDecimals = inputDecimals.checked;
 		updateCalculations();
+	};
+	inputProjection = document.querySelector('#projection');
+	Maps.all.forEach(map => {
+		inputProjection.innerHTML += `<option value=${map.id}>${map.name}</option>`
+	});
+	inputProjection.oninput = () => {
+		currentMap = Maps[inputProjection.value];
+		updateMap();
 	};
 	paper = document.querySelector('#paper');
 	canvas = document.querySelector('canvas');

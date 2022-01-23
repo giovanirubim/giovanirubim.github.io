@@ -144,7 +144,7 @@ class Mat3Type extends Float64Array {
 export const Vec3 = (x = 0, y = 0, z = 0) => new Vec3Type().set(x, y, z);
 export const Mat3 = () => new Mat3Type();
 
-export const getCoordCircle = (lat, long, radius, numberOfPoints = 64) => {
+export const getCoordCircle = (lat, long, radius, numberOfPoints = 32) => {
 	const mat = Mat3().buildCoordRotation(lat, long);
 	const rad = Math.sin(radius);
 	const z = Math.cos(radius);
