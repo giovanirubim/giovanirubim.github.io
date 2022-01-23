@@ -236,7 +236,7 @@ const doCalculations = () => {
 	}
 	processStar(current_star);
 	const result = Math3D.trilaterate(args);
-	addPaperLine(`trilateration result = ${
+	addPaperLine(`result = ${
 		strLat(result[0]*RAD_TO_DEG)
 	}, ${
 		strLong(result[1]*RAD_TO_DEG)

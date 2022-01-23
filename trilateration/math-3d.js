@@ -202,7 +202,7 @@ export const trilaterationErrorFunction = (args) => {
 		let sum = 0;
 		for (let i=args.length; i--;) {
 			const { gp, arc } = args[i];
-			const error = arcLengthBetweenCoords(coord, gp) - arc;
+			const error = arcLengthBetweenCoords(...coord, ...gp) - arc;
 			sum += error*error;
 		}
 		return sum;
