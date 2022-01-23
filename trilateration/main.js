@@ -1,37 +1,82 @@
-let textarea;
-let paper;
-let usingDecimals = false;
+import * as Almanac from './almanac.js';
+import { trilaterate, getCoordCircle } from './math.js';
+import loadImage from './load-image.js';
 
-const stringifyDegree = (degree) => {
-	if (usingDecimals) {
-		return degree.toFixed(6)*1 + '';
+let inputData;
+let paper;
+let inputDecimals;
+let useDecimals = false;
+let canvas;
+let ctx;
+let imagePromise = loadImage('./texture.jpg');
+
+const args = [];
+const NM_TO_MI = 1852/1609.344;
+const DEG_TO_RAD = Math.PI/180;
+const RAD_TO_DEG = 180/Math.PI;
+
+const strFloat = (val, decs = 4) => (val*1).toFixed(decs)*1 + '';
+const strAngle = (val) => {
+	if (useDecimals) {
+		return strFloat(val, 4);
 	}
-	let neg = degree < 0;
-	let total = Math.abs(degree) * 3600;
-	let sec = total % 60;
-	total = Math.round((total - sec)/60);
-	let min = total % 60 + '';
-	let hr = Math.round((total - min)/60) + '';
-	return `${neg?'-':''}${hr}°${min.padStart(2,0)}'${sec.toFixed(2).padStart(5,0)}"`;
+	const sign = val >= 0 ? '' : '-';
+	const totalSec = Math.round(Math.abs(val * 3600));
+	const s = totalSec % 60;
+	const totalMin = Math.round((totalSec - s)/60);
+	const m = totalMin % 60;
+	const h = Math.round((totalMin - m)/60);
+	return sign + `${
+		h
+	}°${
+		m.toString().padStart(2, '0')
+	}'${
+		s.toString().padStart(2, '0')
+	}"`
+};
+const strLat = (val) => {
+	let str = strAngle(val);
+	if (str.startsWith('-')) {
+		str += 'S';
+	} else {
+		str += 'N';
+	}
+	str = str.replace(/^[+\-]\s*/, '');
+	return str;
+};
+const strLong = (val) => {
+	let str = strAngle(val);
+	if (str.startsWith('-')) {
+		str += 'W';
+	} else {
+		str += 'E';
+	}
+	str = str.replace(/^[+\-]\s*/, '');
+	return str;
 };
 
-const stringifyCoord = (lat, long) => {
-	lat = stringifyDegree(lat);
-	long = stringifyDegree(long);
-	if (usingDecimals) {
-		return `${lat}, ${long}`;
-	}
-	if (lat.startsWith('-')) {
-		lat = lat.replace(/^-/, '') + 'S';
-	} else {
-		lat += 'N';
-	}
-	if (long.startsWith('-')) {
-		long = long.replace(/^-/, '') + 'W';
-	} else {
-		long += 'E';
-	}
-	return `${lat}, ${long}`;
+const hourRegex = /^(\d+\s*h\s*\d+(\s*m(\s*\d+(\.\d+)?(\s*s)?)?)?)$/i;
+const degreeRegexes = [
+	/^(([+\-]\s*)?\d+(\s+\d+(\s+\d+(\.\d+)?)?)?)$/,
+	/^(([+\-]\s*)?\d+(\s*°\s*\d+(\s*'\s*\d+(\.\d+)?"?)?)?)$/,
+];
+const floatRegex = /^(([+\-]\s*)?\d+(\.\d+)?)$/;
+
+const parseHours = (str) => str
+	.replace(/\s*([hms:])\s*/ig, '$1')
+	.split(/[hms:\s]/)
+	.map((val, i) => val*Math.pow(60, -i))
+	.reduce((a, b) => a + b);
+
+const parseDegrees = (str) => {
+	const sign = str.startsWith('-') ? -1 : 1;
+	const abs = str
+		.replace(/^[+\-]\s*/, '')
+		.replace(/\s*([°'"+\-])\s*/ig, '$1')
+		.split(/[°'"\s]/)
+		.map((val, i) => val*Math.pow(60, -i))
+		.reduce((a, b) => a + b);
+	return abs*sign;
 };
 
 const example = `
@@ -53,95 +98,247 @@ const example = `
 
 `.trim().replace(/[\t\x20]*\n[\t\x20]*/g, '\n');
 
-const addLine = (line) => {
-	paper.innerText += line;
+const clearPaper = () => {
+	paper.innerHTML = '';
+};
+
+const addPaperLine = (line) => {
+	paper.innerText += line.toUpperCase();
 	paper.innerHTML += '<br>';
 };
 
-const starNameMatches = (a, b) => {
-	a = a.replace(/[^a-zA-Z]/g, '').toLowerCase();
-	b = b.replace(/[^a-zA-Z]/g, '').toLowerCase();
-	return a === b;
+const timeRegex = /^(\d+-\d+-\d+\s+\d+:\d+(:\d+(\.\d+)?)?(\s+(UTC|GMT)?\s*[\-+]\d+(:\d+)?)?)$/i;
+const parseTime = (time) => {
+	if (!timeRegex.test(time)) {
+		throw `
+			Bad time format
+			It should be something like
+			2022-01-22 21:32:50 +2:30
+		`;
+	}
+	const date = new Date(time);
+	if (isNaN(date*1)) {
+		throw 'This date/time doesn\'t seem to exist';
+	}
+	return date;
 };
 
-const solve = () => {
-	paper.innerHTML = '';
-	let star = null;
-	let time = undefined;
+const parseRa = (ra) => {
+	if (!hourRegex.test(ra)) {
+		throw `
+			Bad right ascension format "${ra}"
+			It should be something like
+			18h52m32.5s or 18:52
+		`;
+	}
+	return parseHours(ra);
+};
+
+const parseDec = (dec) => {
+	if (floatRegex.test(dec)) {
+		return Number(dec);
+	}
+	if (!degreeRegexes.find(regex => regex.test(dec))) {
+		throw `
+			Bad declination format "${dec}"
+			It should be something like
+			-26 28 43.2 or 38°48'09.5" or 13.94217
+		`;
+	}
+	return parseDegrees(dec);
+};
+
+const parseRaDec = (radec) => {
+	if (!radec.includes('/')) {
+		throw `
+			Bad RA/DEC format
+			It should be something like
+			18h52m32.5s / -26°28'43.2"
+		`;
+	}
+	const [ ra, dec ] = radec.trim().split(/\s*\/\s*/);
+	return [
+		parseRa(ra),
+		parseDec(dec),
+	];
+};
+
+const parseAlt = (alt) => {
+	if (floatRegex.test(alt)) {
+		return Number(alt);
+	}
+	if (!degreeRegexes.find(regex => regex.test(alt))) {
+		throw `
+			Bad altitude angle format "${alt}"
+			It should be something like
+			26 28 43.2 or 38°48'09.5" or 13.94217
+		`;
+	}
+	return parseDegrees(alt);
+};
+
+const processStar = (star) => {
+	let { name, radec, alt, time } = star;
+	addPaperLine(`- ${name} -`);
+	if (!time?.trim()) {
+		throw 'Missing the time of the measurement';
+	}
+	time = parseTime(time);
+	if (radec == null) {
+		radec = Almanac.findRaDec(name);
+		if (radec == null) {
+			throw `Did not find the RA/DEC for ${name} in the almanac\nPlease provide the RA/DEC`;
+		}
+	}
+	let [ ra, dec ] = parseRaDec(radec);
+	let lat = dec;
+	let long = Almanac.calcLongitude(ra, time);
+	addPaperLine(`GP = ${strLat(lat)}, ${strLong(long)}`);
+	alt = parseAlt(alt);
+	let arc = 90 - alt;
+	addPaperLine(`alt = ${
+		strFloat(alt)
+	}° // 90° - ${
+		strFloat(alt)
+	}° = ${
+		strFloat(arc)
+	}°`);
+	let nms = arc*60;
+	let miles = nms*NM_TO_MI;
+	addPaperLine(`${
+		strFloat(arc)
+	}*60 nm = ${
+		strFloat(nms, 1)
+	} nm = ${
+		strFloat(miles, 1)
+	} mi`);
+	addPaperLine('');
+	args.push({
+		gp: [ lat*DEG_TO_RAD, long*DEG_TO_RAD ],
+		arc: arc*DEG_TO_RAD,
+	});
+};
+
+const doCalculations = () => {
+	args.length = 0;
+	const lines = inputData.value.toLowerCase().trim().split(/\s*\n\s*/);
+	let current_star = null;
+	let current_time = null;
 	const stars = [];
-	const lines = textarea.value.trim().split(/\s*\n\s*/)
 	for (let line of lines) {
-		const [, field, value ] = line.toLowerCase().match(/^(.*?)\s*:\s*(.*)$/);
+		const [, field, value ] = line.match(/^([^:]+?)\s*:\s*(.*)$/) ?? [];
+		if (field == null || value == null) {
+			throw `Unprocessable line "${line}"`;
+		}
 		if (field === 'star') {
-			star = { name: value, time };
-			stars.push(star);
+			if (current_star != null) {
+				processStar(current_star);
+			}
+			current_star = { name: value, time: current_time };
+			stars.push(current_star);
+			continue;
+		}
+		if (/ra\s*\/\s*dec/i.test(field)) {
+			current_star.radec = value;
 			continue;
 		}
 		if (field === 'time') {
-			const str = value
-				.replace(/utc/i, '')
-				.replace(/\s+/g, '\x20');
-			time = star.time = new Date(str);
-			continue;
-		}
-		if (field === 'ra/dec') {
-			let [ ra, dec ] = value.split(/\s*\/\s*/).map(parseAngle);
-			star.ra = ra;
-			star.dec = dec;
+			current_star.time = value;
 			continue;
 		}
 		if (field === 'alt') {
-			star.alt = parseAngle(value.trim());
+			current_star.alt = value;
 			continue;
 		}
+		throw `Unknown field "${field}"`;
 	}
-	let args = [];
-	for (let i=0; i<stars.length; ++i) {
-		const star = stars[i];
-		let { ra, dec: lat, time, name } = star;
-		if (paper.innerText) {
-			paper.innerHTML += '<br>';
+	processStar(current_star);
+	const result = trilaterate(args);
+	addPaperLine(`result = ${
+		strLat(result[0]*RAD_TO_DEG)
+	}, ${
+		strLong(result[1]*RAD_TO_DEG)
+	}`)
+};
+
+const project = (lat, long) => [
+	(long/(Math.PI*2) + 0.5)*canvas.width,
+	(0.5 - (lat/Math.PI))*canvas.height,
+];
+
+const makeSpotAt = (lat, long) => {
+	const [ x, y ] = project(lat, long);
+	ctx.lineWidth = 2;
+	ctx.fillStyle = '#000';
+	ctx.strokeStyle = '#fff';
+	ctx.beginPath();
+	ctx.arc(x, y, 3, 0, Math.PI*2);
+	ctx.fill();
+	ctx.stroke();
+};
+
+const makeCircle = (lat, long, arc) => {
+	const points = getCoordCircle(lat, long, arc);
+	ctx.beginPath();
+	for (let i=0; i<points.length; ++i) {
+		const [ lat, long ] = points[i];
+		const [ x, y ] = project(lat, long);
+		if (i === 0) {
+			ctx.moveTo(x, y);
+		} else {
+			ctx.lineTo(x, y);
 		}
-		addLine(`- ${name.toUpperCase()} -`)
-		if (ra == null || lat == null) {
-			let [, radec ] = Object.entries(almanac).find(entry => starNameMatches(entry[0], name));
-			addLine('RA/DEC = ' + radec);
-			[ ra, lat ] = radec.split(/\s*\/\s*/).map(parseAngle);
-		}
-		const long = calcLongitude(time, ra);
-		addLine(`GP = ${stringifyCoord(lat, long)}`);
-		const alt = star.alt.toFixed(4)*1;
-		const angle = (90 - alt).toFixed(4)*1;
-		addLine(`ALT = ${alt}° // 90° - ${alt}° = ${angle}°`);
-		const nm = (90 - star.alt)*60;
-		const meters = nm*NM_TO_M;
-		addLine(`${angle}*60 NM = ${nm.toFixed(3)*1} NM = ${(nm*NM_TO_MI).toFixed(3)*1} MI`);
-		args.push({
-			gp: [ lat, long ],
-			distance: meters,
-		});
 	}
-	addLine('');
-	const calcError = calcErrorFn(args);
-	const [ lat, long ] = findMinErrorCoord(calcError).map(x => x*TO_DEG);
-	addLine(`RESULT = ${stringifyCoord(lat, long)}`);
+	ctx.closePath();
+	ctx.lineWidth = 1;
+	ctx.strokeStyle = '#000';
+	ctx.fillStyle = 'rgba(0, 127, 255, 0.2)';
+	ctx.lineJoin = 'round';
+	ctx.fill();
+	ctx.stroke();
+};
+
+const updateMap = () => imagePromise.then(img => {
+	const height = canvas.width/img.width*img.height;
+	canvas.height = height;
+	ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+	for (let { gp, arc } of args) {
+		makeCircle(...gp, arc);
+	}
+	for (let { gp, arc } of args) {
+		makeSpotAt(...gp);
+	}
+});
+
+const updateCalculations = () => {
+	clearPaper();
+	try {
+		doCalculations();
+	} catch(error) {
+		if (typeof error === 'string') {
+			addPaperLine(error.trim().replace(/\s*\n\s*/g, '\n'));
+		} else {
+			addPaperLine('Oops, there was some issue during the calculations');
+			addPaperLine('But you can check the console');
+			console.error(error);
+		}
+		return;
+	}
+	updateMap();
 };
 
 window.addEventListener('load', async () => {
+	inputData = document.querySelector('textarea');
+	inputData.value = example;
+	inputData.focus();
+	inputData.oninput = updateCalculations;
+	inputDecimals = document.querySelector('[name="decimals"]');
+	inputDecimals.onchange = () => {
+		useDecimals = inputDecimals.checked;
+		updateCalculations();
+	};
 	paper = document.querySelector('#paper');
-	textarea = document.querySelector('textarea');
-	textarea.value = example;
-	textarea.oninput = () => {
-		try {
-			solve();
-		} catch(err) {
-			addLine('');
-			addLine('Ops, something wrong with the input data');
-		}
-	};
-	document.querySelector('[name="decimals"]').oninput = function() {
-		usingDecimals = this.checked;
-		solve();
-	};
-	solve();
+	canvas = document.querySelector('canvas');
+	ctx = canvas.getContext('2d');
+	updateCalculations();
 });

@@ -1,97 +1,177 @@
-const AV_RAD = 6371230.0;
-const EQ_RAD = 6378137.0;
-const PO_RAD = 6356752.3;
-
-const { PI, sqrt, cos, sin, tan, acos, asin } = Math;
-const TO_RAD = PI/180;
-const TO_DEG = 180/PI;
-const TAU = PI*2;
+const { PI, sin, cos, asin, acos, sqrt } = Math;
 const QUART_CIRC = PI/2;
-const OCT_CIRC = PI/4;
 const HALF_CIRC = PI;
-const MI_TO_M = 1609.34;
-const M_TO_MI = 1/MI_TO_M;
-const NM_TO_M = 1852;
-const M_TO_NM = 1/NM_TO_M;
-const MI_TO_NM = MI_TO_M/NM_TO_M;
-const NM_TO_MI = NM_TO_M/MI_TO_M;
-const ALIGN_TIME = new Date('2022-07-01 05:23:00 +0');
-const SID_DAY = 86164.09053820801;
 
-Array.prototype.cs = function() { return this.map(x => x*TO_DEG).join(', '); };
-
-const calcLongitude = (time, ra) => {
-	const shift = (ALIGN_TIME - time)/1000/SID_DAY%1*360;
-	const angle = ra + shift;
-	return (angle%360 + 360 + 180)%360 - 180;
+const mulMat3Mat3 = (a, b, r) => {
+	const r0 = a[0]*b[0] + a[1]*b[3] + a[2]*b[6];
+	const r1 = a[0]*b[1] + a[1]*b[4] + a[2]*b[7];
+	const r2 = a[0]*b[2] + a[1]*b[5] + a[2]*b[8];
+	const r3 = a[3]*b[0] + a[4]*b[3] + a[5]*b[6];
+	const r4 = a[3]*b[1] + a[4]*b[4] + a[5]*b[7];
+	const r5 = a[3]*b[2] + a[4]*b[5] + a[5]*b[8];
+	const r6 = a[6]*b[0] + a[7]*b[3] + a[8]*b[6];
+	const r7 = a[6]*b[1] + a[7]*b[4] + a[8]*b[7];
+	const r8 = a[6]*b[2] + a[7]*b[5] + a[8]*b[8];
+	r[0] = r0;
+	r[1] = r1;
+	r[2] = r2;
+	r[3] = r3;
+	r[4] = r4;
+	r[5] = r5;
+	r[6] = r6;
+	r[7] = r7;
+	r[8] = r8;
 };
 
-const coord = (lat, long) => [ lat*TO_RAD, long*TO_RAD ];
-
-const calcEllipseSurfacePoint = (angle) => {
-	const slope = tan(angle);
-	const a = slope/PO_RAD;
-	const x = sqrt(1/(1/(EQ_RAD*EQ_RAD) + a*a));
-	const y = x*slope;
-	return [ x, y ];
+const mulVec3Mat3 = (v, m, r) => {
+	const r0 = v[0]*m[0] + v[1]*m[3] + v[2]*m[6];
+	const r1 = v[0]*m[1] + v[1]*m[4] + v[2]*m[7];
+	const r2 = v[0]*m[2] + v[1]*m[5] + v[2]*m[8];
+	r[0] = r0;
+	r[1] = r1;
+	r[2] = r2;
 };
 
-const spheroidCoordToEuclidian = ([ lat, long ]) => {
-	const ellipsePoint = calcEllipseSurfacePoint(lat);
-	const [ radius, y ] = ellipsePoint;
-	const x = sin(long)*radius;
-	const z = cos(long)*radius;
-	return [ x, y, z ];
+const coordToEuclidian = (lat, long, dst) => {
+	const rad = cos(lat);
+	dst[0] = sin(long)*rad;
+	dst[1] = sin(lat);
+	dst[2] = cos(long)*rad;
+	return dst;
 };
 
-const sphereCoordToEuclidian = ([ lat, long ]) => {
-	const rad = cos(lat)*AV_RAD;
-	const y = sin(lat)*AV_RAD;
-	const x = sin(long)*rad;
-	const z = cos(long)*rad;
-	return [ x, y, z ];
+const euclidianToCoord = (x, y, z, dst) => {
+	const sqrx = x*x;
+	const sqrz = z*z;
+	const sqrxz = sqrx + sqrz;
+	const length3d = sqrt(sqrxz + y*y);
+	const length2d = sqrt(sqrxz);
+	dst[0] = asin(y/length3d);
+	dst[1] = x >= 0 ? acos(z/length2d) : - acos(z/length2d);
+	return dst;
 };
 
-const calcEuclidianDistance = ([ ax, ay, az ], [ bx, by, bz ]) => {
+const euclidianDistance = (ax, ay, az, bx, by, bz) => {
 	const dx = bx - ax;
 	const dy = by - ay;
 	const dz = bz - az;
-	return sqrt(dx*dx + dy*dy + dz*dz);
+	return Math.sqrt(dx*dx + dy*dy + dz*dz);
 };
 
-const calcSphereDistance = (a, b) => {
-	const chord = calcEuclidianDistance(
-		sphereCoordToEuclidian(a),
-		sphereCoordToEuclidian(b),
-	);
-	const arc = chordToArcRadians(chord, AV_RAD);
-	return arc*AV_RAD;
+class Vec3Type extends Float64Array {
+	constructor() {
+		super(3);
+	}
+	set(x, y, z) {
+		this[0] = x;
+		this[1] = y;
+		this[2] = z;
+		return this;
+	}
+	clone(vec3 = new Vec3Type()) {
+		vec3[0] = this[0];
+		vec3[1] = this[1];
+		vec3[2] = this[2];
+		return this;
+	}
+	apply(mat3, dst = this) {
+		mulVec3Mat3(this, mat3, dst);
+		return dst;
+	}
+	length() {
+		const [ x, y, z ] = this;
+		return sqrt(x*x + y*y + z*z);
+	}
+	sub(other, dst = this) {
+		dst[0] = this[0] - other[0];
+		dst[1] = this[1] - other[1];
+		dst[2] = this[2] - other[2];
+		return dst;
+	}
+	toEuclidian(dst = this) {
+		const [ lat, long ] = this;
+		coordToEuclidian(lat, long, dst);
+		return dst;
+	}
+	toCoord(dst = this) {
+		const [ x, y, z ] = this;
+		euclidianToCoord(x, y, z, dst);
+		return dst;
+	}
+	scale(value, dst = this) {
+		this[0] = dst[0]*value;
+		this[1] = dst[1]*value;
+		this[2] = dst[2]*value;
+		return dst;
+	}
+	get x() { return this[0]; }
+	set x(value) { this[0] = value; }
+	get y() { return this[1]; }
+	set y(value) { this[1] = value; }
+	get z() { return this[2]; }
+	set z(value) { this[2] = value; }
+	get lat() { return this[0]; }
+	set lat(value) { this[0] = value; }
+	get long() { return this[1]; }
+	set long(value) { this[1] = value; }
+}
+
+class Mat3Type extends Float64Array {
+	constructor() {
+		super(9);
+		this[0] = 1;
+		this[4] = 1;
+		this[8] = 1;
+	}
+	buildCoordRotation(lat, long) {
+		const sin_lat = sin(lat);
+		const cos_lat = cos(lat);
+		const sin_long = sin(long);
+		const cos_long = cos(long);
+		this[0] = cos_long;
+		this[1] = 0;
+		this[2] = - sin_long;
+		this[3] = - sin_lat*sin_long;
+		this[4] = cos_lat;
+		this[5] = - sin_lat*cos_long;
+		this[6] = cos_lat*sin_long;
+		this[7] = sin_lat;
+		this[8] = cos_lat*cos_long;
+		return this;
+	}
+}
+
+export const Vec3 = (x = 0, y = 0, z = 0) => new Vec3Type().set(x, y, z);
+export const Mat3 = () => new Mat3Type();
+
+export const getCoordCircle = (lat, long, radius, numberOfPoints = 64) => {
+	const mat = Mat3().buildCoordRotation(lat, long);
+	const rad = Math.sin(radius);
+	const z = Math.cos(radius);
+	const step = Math.PI*2/numberOfPoints;
+	const vec = Vec3(0, 0, z);
+	const points = [];
+	for (let i=0; i<numberOfPoints; ++i) {
+		const angle = step*i;
+		const x = Math.cos(angle)*rad;
+		const y = Math.sin(angle)*rad;
+		vec.set(x, y, z);
+		vec.apply(mat);
+		vec.toCoord();
+		points.push([ vec[0], vec[1] ]);
+	}
+	return points;
 };
 
-const chordToArcRadians = (chord, radius) => {
-	return Math.asin(chord/radius/2)*2;
+export const arcLengthBetweenCoords = (aLat, aLong, bLat, bLong) => {
+	const aux = new Array(3);
+	const [ ax, ay, az ] = coordToEuclidian(aLat, aLong, aux);
+	const [ bx, by, bz ] = coordToEuclidian(bLat, bLong, aux);
+	const chord = euclidianDistance(ax, ay, az, bx, by, bz);
+	return asin(chord/2)*2;
 };
 
-const arcRadiansToChord = (arc, radius) => {
-	return Math.sin(arc/2)*radius*2;
-};
-
-const arcRadiansToHump = (arc, radius) => {
-	return radius*(1 - Math.cos(arc/2));
-};
-
-const euclidianToSphereCoord = ([ x, y, z ]) => {
-	const xSqr = x*x;
-	const ySqr = y*y;
-	const zSqr = z*z;
-	const length3d = sqrt(xSqr + ySqr + zSqr);
-	const length2d = sqrt(xSqr + zSqr);
-	const lat = asin(y/length3d);
-	const long = z >= 0 ? acos(z/length2d) : PI - acos(z/length2d);
-	return [ lat, long ];
-};
-
-const findMinErrorCoord = (calcError, iterations = 40) => {
+export const findMinErrorCoord = (calcError, iterations = 40) => {
 	let currentCoord = [0, 0];
 	let maxChange = 1;
 	for (let i=0; i<iterations; ++i) {
@@ -116,13 +196,12 @@ const findMinErrorCoord = (calcError, iterations = 40) => {
 	return currentCoord;
 };
 
-const calcErrorFn = (args) => {
-	const p = args.map(data => data.gp.map(val => val*TO_RAD));
-	const d = args.map(data => data.distance);
+export const trilaterationErrorFunction = (args) => {
 	const calcError = (coord) => {
 		let sum = 0;
 		for (let i=args.length; i--;) {
-			const error = calcSphereDistance(coord, p[i]) - d[i];
+			const { gp, arc } = args[i];
+			const error = arcLengthBetweenCoords(...coord, ...gp) - arc;
 			sum += error*error;
 		}
 		return sum;
@@ -130,12 +209,7 @@ const calcErrorFn = (args) => {
 	return calcError;
 };
 
-const getCircleOfEqualAltitude = (center, altitude, numberOfPoints) => {
-	const angleStep = Math.PI*2/numberOfPoints;
-	const arc = QUART_CIRC - altitude;
-	for (let i=0; i<=numberOfPoints; ++i) {
-		const angle = i*angleStep;
-		const sin = Math.sin(angle);
-		const cos = Math.cos(angle);
-	}
+export const trilaterate = (args) => {
+	const calcError = trilaterationErrorFunction(args);
+	return findMinErrorCoord(calcError);
 };
