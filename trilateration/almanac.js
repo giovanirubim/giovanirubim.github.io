@@ -75,9 +75,9 @@ const stars = `
 	return { name, id, radec };
 });
 
-export const calcLongitude = (ra, time) => {
-	const angle = ra*HOUR_TO_DEGREE + (ALIGN_TIME - time)*MS_TO_DEGREE;
-	return (angle%360 + 360 + 180)%360 - 180;
+export const calcAriesGHA = (time) => {
+	const angle = (ALIGN_TIME - time)*MS_TO_DEGREE;
+	return (angle%360 + 360)%360;
 };
 
 export const findRaDec = (name) => {

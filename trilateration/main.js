@@ -193,7 +193,11 @@ const processStar = (star) => {
 	}
 	let [ ra, dec ] = parseRaDec(radec);
 	let lat = dec;
-	let long = Almanac.calcLongitude(ra, time);
+	let ariesGHA = Almanac.calcAriesGHA(time);
+	addPaperLine(`GHA of Aries = ${strAngle(ariesGHA)}`)
+	let starSHA = ra/24*360;
+	addPaperLine(`SHA = ${strAngle(starSHA)}`);
+	let long = (starSHA + ariesGHA + 180)%360 - 180;
 	addPaperLine(`GP = ${strLat(lat)}, ${strLong(long)}`);
 	alt = parseAlt(alt);
 	let arc = 90 - alt;
