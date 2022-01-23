@@ -187,7 +187,7 @@ const processStar = (star) => {
 	time = parseTime(time);
 	if (radec == null) {
 		radec = Almanac.findRaDec(name);
-		if (radec == null) {
+		if (!radec) {
 			throw `Did not find the RA/DEC for ${name} in the almanac\nPlease provide the RA/DEC`;
 		}
 	}
