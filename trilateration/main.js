@@ -1,8 +1,10 @@
 import * as Almanac from './almanac.js';
-import * as Math3D from './math-3d.js';
+import { trilaterate } from './math.js';
 
 let inputData;
 let paper;
+let inputDecimals;
+let useDecimals = false;
 
 const args = [];
 const NM_TO_MI = 1852/1609.344;
@@ -11,8 +13,11 @@ const RAD_TO_DEG = 180/Math.PI;
 
 const strFloat = (val, decs = 4) => (val*1).toFixed(decs)*1 + '';
 const strAngle = (val) => {
+	if (useDecimals) {
+		return strFloat(val, 4);
+	}
 	const sign = val >= 0 ? '' : '-';
-	const totalSec = Math.round(Math.abs(val * 3600 * 10))/10;
+	const totalSec = Math.round(Math.abs(val * 3600));
 	const s = totalSec % 60;
 	const totalMin = Math.round((totalSec - s)/60);
 	const m = totalMin % 60;
@@ -22,7 +27,7 @@ const strAngle = (val) => {
 	}°${
 		m.toString().padStart(2, '0')
 	}'${
-		s.toFixed(1).padStart(4, '0')
+		s.toString().padStart(2, '0')
 	}"`
 };
 const strLat = (val) => {
@@ -172,6 +177,12 @@ const processStar = (star) => {
 	let { name, radec, alt, time } = star;
 	addPaperLine(`- ${name} -`);
 	time = parseTime(time);
+	if (radec == null) {
+		radec = Almanac.findRaDec(name);
+		if (radec == null) {
+			throw `Did not find the RA/DEC for ${name} in the almanac\nPlease provide the RA/DEC`;
+		}
+	}
 	let [ ra, dec ] = parseRaDec(radec);
 	let lat = dec;
 	let long = Almanac.calcLongitude(ra, time);
@@ -235,7 +246,7 @@ const doCalculations = () => {
 		throw `Unknown field "${field}"`;
 	}
 	processStar(current_star);
-	const result = Math3D.trilaterate(args);
+	const result = trilaterate(args);
 	addPaperLine(`result = ${
 		strLat(result[0]*RAD_TO_DEG)
 	}, ${
@@ -262,6 +273,12 @@ window.addEventListener('load', async () => {
 	inputData = document.querySelector('textarea');
 	inputData.value = example;
 	inputData.focus();
+	inputData.oninput = updateCalculations;
+	inputDecimals = document.querySelector('[name="decimals"]');
+	inputDecimals.onchange = () => {
+		useDecimals = inputDecimals.checked;
+		updateCalculations();
+	};
 	paper = document.querySelector('#paper');
 	updateCalculations();
 });

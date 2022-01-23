@@ -19,11 +19,11 @@ textarea {
 	margin: 0px;
 }
 #paper {
-	background-color: #edc;
-	color: rgba(0, 0, 0, 0.8);
+	background-color: #ba9;
+	color: #642;
 	font-family: 'Architects Daughter', cursive;
 	font-weight: bold;
-	font-size: 18px;
+	font-size: 16px;
 	padding: 10px 20px;
 	margin-top: 10px;
 	box-shadow: -5px 5px 20px #000;

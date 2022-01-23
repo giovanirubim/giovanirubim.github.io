@@ -3,7 +3,9 @@ const SID_DAY = 86164.09053820801;
 const MS_TO_DEGREE = 360/1000/SID_DAY;
 const HOUR_TO_DEGREE = 360/24;
 
-const nameToId = (string) => string.replace(/[^a-zA-Z]/g, '');
+const nameToId = (string) => string
+	.toLowerCase()
+	.replace(/[^a-zA-Z]/g, '');
 
 const stars = `
 
