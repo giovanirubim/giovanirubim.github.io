@@ -1,78 +1,20 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<title>Sextant Trilateration</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title></title>
-		<style type="text/css">
-			* {
-				font-family: monospace;
-			}
-			body {
-				background-color: #222;
-				text-align: center;
-				margin: 0px;
-			}
-			textarea {
-				border: none;
-				background-color: #202020;
-				border-radius: 2px;
-				padding: 10px;
-				color: #ddd;
-				width: 400px;
-				height: 220px;
-				resize: none;
-				margin: 0px;
-			}
-			#paper {
-				background-color: #edc;
-				color: rgba(0, 0, 0, 0.8);
-				font-family: 'Architects Daughter', cursive;
-				font-weight: bold;
-				font-size: 18px;
-				padding: 10px 20px;
-				margin-top: 10px;
-				box-shadow: -5px 5px 20px #000;
-			}
-			.option {
-				margin-top: 10px;
-				color: #aaa;
-			}
-			#main {
-				width: 450px;
-				text-align: center;
-				margin: 0px auto 0px auto;
-				padding: 30px;
-				margin: 20px auto;
-				background-color: #333;
-				border: 1px solid #555;
-			}
-			#title {
-				margin-top: 20px;
-				color: #ccc;
-				font-size: 32px;
-				font-family: 'Architects Daughter', cursive;
-			}
-			#canvas {
-				margin-top: 20px;
-			}
-			canvas {
-				background-color: #444;
-			}
-		</style>
+		<link rel="stylesheet" href="style.css">
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
-		<script type="text/javascript" src="./math.js"></script>
-		<script type="text/javascript" src="./almanac.js"></script>
-		<script type="text/javascript" src="./parse-angle.js"></script>
-		<script type="text/javascript" src="./main.js"></script>
+		<script type="module" src="./main.js"></script>
 	</head>
 	<body>
 		<div id="title">
 			Sextant Trilateration
 		</div>
-		<div id="main">
+		<div class="block">
 			<form spellcheck="false">
 				<textarea></textarea>
 			</form>
@@ -80,6 +22,16 @@
 				Use decimals: <input type="checkbox" name="decimals">
 			</div>
 			<div id="paper"></div>
+		</div>
+		<div class="block">
+			<div id="maptitle">Circles of equal altitude</div>
+			<canvas width="700"></canvas>
+			<div class="option">
+				Projection:
+				<select>
+					<option value="texture">Texture</option>
+				</select>
+			</div>
 		</div>
   	</body>
 </html>
