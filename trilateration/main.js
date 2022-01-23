@@ -1,10 +1,14 @@
 import * as Almanac from './almanac.js';
-import { trilaterate } from './math.js';
+import { trilaterate, getCoordCircle } from './math.js';
+import loadImage from './load-image.js';
 
 let inputData;
 let paper;
 let inputDecimals;
 let useDecimals = false;
+let canvas;
+let ctx;
+let imagePromise = loadImage('./texture.jpg');
 
 const args = [];
 const NM_TO_MI = 1852/1609.344;
@@ -176,6 +180,9 @@ const parseAlt = (alt) => {
 const processStar = (star) => {
 	let { name, radec, alt, time } = star;
 	addPaperLine(`- ${name} -`);
+	if (!time?.trim()) {
+		throw 'Missing the time of the measurement';
+	}
 	time = parseTime(time);
 	if (radec == null) {
 		radec = Almanac.findRaDec(name);
@@ -254,6 +261,55 @@ const doCalculations = () => {
 	}`)
 };
 
+const project = (lat, long) => [
+	(long/(Math.PI*2) + 0.5)*canvas.width,
+	(0.5 - (lat/Math.PI))*canvas.height,
+];
+
+const makeSpotAt = (lat, long) => {
+	const [ x, y ] = project(lat, long);
+	ctx.lineWidth = 2;
+	ctx.fillStyle = '#000';
+	ctx.strokeStyle = '#fff';
+	ctx.beginPath();
+	ctx.arc(x, y, 3, 0, Math.PI*2);
+	ctx.fill();
+	ctx.stroke();
+};
+
+const makeCircle = (lat, long, arc) => {
+	const points = getCoordCircle(lat, long, arc);
+	ctx.beginPath();
+	for (let i=0; i<points.length; ++i) {
+		const [ lat, long ] = points[i];
+		const [ x, y ] = project(lat, long);
+		if (i === 0) {
+			ctx.moveTo(x, y);
+		} else {
+			ctx.lineTo(x, y);
+		}
+	}
+	ctx.closePath();
+	ctx.lineWidth = 1;
+	ctx.strokeStyle = '#000';
+	ctx.fillStyle = 'rgba(0, 127, 255, 0.2)';
+	ctx.lineJoin = 'round';
+	ctx.fill();
+	ctx.stroke();
+};
+
+const updateMap = () => imagePromise.then(img => {
+	const height = canvas.width/img.width*img.height;
+	canvas.height = height;
+	ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+	for (let { gp, arc } of args) {
+		makeCircle(...gp, arc);
+	}
+	for (let { gp, arc } of args) {
+		makeSpotAt(...gp);
+	}
+});
+
 const updateCalculations = () => {
 	clearPaper();
 	try {
@@ -266,7 +322,9 @@ const updateCalculations = () => {
 			addPaperLine('But you can check the console');
 			console.error(error);
 		}
+		return;
 	}
+	updateMap();
 };
 
 window.addEventListener('load', async () => {
@@ -280,5 +338,7 @@ window.addEventListener('load', async () => {
 		updateCalculations();
 	};
 	paper = document.querySelector('#paper');
+	canvas = document.querySelector('canvas');
+	ctx = canvas.getContext('2d');
 	updateCalculations();
 });
