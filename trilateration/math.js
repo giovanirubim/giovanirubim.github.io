@@ -1,6 +1,6 @@
 const { PI, sin, cos, asin, acos, sqrt } = Math;
-const QUART_CIRC = PI/2;
-const HALF_CIRC = PI;
+const TAU = PI*2;
+const HALF_PI = PI/2;
 
 const mulMat3Mat3 = (a, b, r) => {
 	const r0 = a[0]*b[0] + a[1]*b[3] + a[2]*b[6];
@@ -171,14 +171,29 @@ export const arcLengthBetweenCoords = (aLat, aLong, bLat, bLong) => {
 	return asin(chord/2)*2;
 };
 
+const fixCoord = (coord) => {
+	let [ lat, long ] = coord;
+	lat = lat%PI;
+	if (lat > HALF_PI) {
+		lat = PI - lat;
+		long += PI;
+	} else if (lat < -HALF_PI) {
+		lat = - (lat + PI);
+		long += PI;
+	}
+	long = (long%TAU + TAU + PI)%TAU - PI;
+	coord[0] = lat;
+	coord[1] = long;
+	return coord;
+};
+
 export const findMinErrorCoord = (calcError, iterations = 40) => {
 	let currentCoord = [0, 0];
-	let maxChange = 1;
+	let currentError = calcError(currentCoord);
+	let maxChange = 0.5;
 	for (let i=0; i<iterations; ++i) {
-		maxChange /= 2;
-		let currentError = null;
-		const latShift = maxChange*QUART_CIRC;
-		const longShift = maxChange*HALF_CIRC;
+		const latShift = maxChange*HALF_PI;
+		const longShift = maxChange*PI;
 		const copy = currentCoord.slice();
 		for (let j=0; j<4; ++j) {
 			const bit0 = j&1;
@@ -186,12 +201,14 @@ export const findMinErrorCoord = (calcError, iterations = 40) => {
 			const lat  = copy[0] + (2*bit0 - 1)*latShift;
 			const long = copy[1] + (2*bit1 - 1)*longShift;
 			const coord = [ lat, long ];
+			fixCoord(coord);
 			const error = calcError(coord);
-			if (error < currentError || j === 0) {
+			if (error < currentError) {
 				currentError = error;
 				currentCoord = coord;
 			}
 		}
+		maxChange *= 0.6;
 	}
 	return currentCoord;
 };
