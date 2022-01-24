@@ -21,7 +21,7 @@ const stars = `
 	Alphard: 9h28m39.82s/-8°45'19.2"
 	Alphecca: 15h35m39.01s/+26°38'30.4"
 	Alpheratz: 0h09m32.53s/+29°12'38.9"
-	Altair: 19h51h53.39/+8°55'38.5"
+	Altair: 19h51m53.39s/+8°55'38.5"
 	Ankaa: 0h09m32.53s/+29°12'38.9"
 	Antares: 16h30m47.76s/-26°28'54.6"
 	Arcturus: 14h16m41.50s/+19°04'01.8"
