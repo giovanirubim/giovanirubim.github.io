@@ -251,7 +251,10 @@ const doCalculations = () => {
 			continue;
 		}
 		if (field === 'time') {
-			current_star.time = current_time = value;
+			if (current_star) {
+				current_star.time = value;
+			}
+			current_time = value;
 			continue;
 		}
 		if (field === 'alt') {
