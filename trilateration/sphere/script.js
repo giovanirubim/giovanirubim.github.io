@@ -1,8 +1,14 @@
 const E_RAD = 6371230;
+const TO_RAD = Math.PI/180;
 const MOUSE_DRAG_DIST = 5;
 const LEFT_BUTTON = 1;
+const mainLightDistance = 1;
 
+const worldX = new THREE.Vector3(1, 0, 0);
 const worldY = new THREE.Vector3(0, 1, 0);
+const worldZ = new THREE.Vector3(0, 0, 1);
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
 	45,
@@ -15,14 +21,16 @@ const lineMaterial = new THREE.LineBasicMaterial({
 	transparent: true,
 	opacity: 0.25,
 });
+const circleGeometry = new THREE.BufferGeometry().setFromPoints(
+	new Array(360).fill().map((_, i) => {
+		const x = Math.cos(i/180*Math.PI);
+		const y = Math.sin(i/180*Math.PI);
+		return new THREE.Vector3(x, y, 0);
+	}),
+);
+const circleHeight = 0.1;
 
-const starRadius = 0.01;
-const starHeight = 0.25;
-const starLineGap = 0.05;
-const starLineEnd = 1 + starHeight - starRadius - starLineGap;
-
-const observer = { lat: 0, long: 0, height: E_RAD*4 };
-const coordToNormalXyz = (lat, long, height, radius = 1) => {
+const coordToNormalXyz = (lat, long, height = 0, radius = 1) => {
 	lat = lat/180*Math.PI;
 	long = long/180*Math.PI;
 	const xzRad = Math.cos(lat);
@@ -33,8 +41,56 @@ const coordToNormalXyz = (lat, long, height, radius = 1) => {
 	return [ x, y, z ];
 };
 
+const putCircleAt = (lat, long, rad) => {
+	const circle = new THREE.Line(
+		circleGeometry,
+		new THREE.LineBasicMaterial({
+			color: 0xffbb77,
+		}),
+	);
+	const [ x, y, z ] = coordToNormalXyz(lat, long);
+	const dist = Math.cos(rad*TO_RAD);
+	const scale = Math.sin(rad*TO_RAD);
+	circle.rotation.x = 0;
+	circle.rotation.y = 0;
+	circle.rotation.z = 0;
+	circle.scale.x = scale;
+	circle.scale.y = scale;
+	circle.rotateOnWorldAxis(worldX, -lat*TO_RAD);
+	circle.rotateOnWorldAxis(worldY, long*TO_RAD);
+	circle.position.x = x*dist;
+	circle.position.y = y*dist;
+	circle.position.z = z*dist;
+	scene.add(circle);
+};
+
+putCircleAt(-16.7479, 144.0345, 19.6166);
+putCircleAt(-8.1782, 121.4034, 31.4601);
+putCircleAt(5.1676, 157.618, 44.7216);
+
+let longShift = 0;
+let earth;
+const rayCast = (nx, ny) => {
+	mouse.x = nx;
+	mouse.y = ny;
+	raycaster.setFromCamera(mouse, camera);
+	return raycaster.intersectObject(earth);
+};
+
+scene.add(new THREE.AmbientLight(0x224466));
+
+const mainLight = new THREE.PointLight(0xffeedd, 1, 100);
+scene.add(mainLight);
+
+const starRadius = 0.01;
+const starHeight = 0.25;
+const starLineGap = 0.03;
+const starLineEnd = 1 + starHeight - starRadius - starLineGap;
+
+const observer = { lat: 0, long: 0, height: E_RAD*3 };
+
 class Star {
-	constructor(lat, long, color = 0xffffff, longShift = 0) {
+	constructor(lat, long, color = 0xffffff) {
 		const material = new THREE.MeshBasicMaterial({ color });
 		const geometry = new THREE.SphereGeometry(starRadius, 12, 6);
 		const star = new THREE.Mesh(geometry, material);
@@ -47,13 +103,12 @@ class Star {
 		);
 		this.lat = lat;
 		this.long = long;
-		this.longShift = 0;
-		this.meshes = [ star, line ];
+		this.elements = [ star, line ];
 		this.update();
 	}
 	update() {
-		const { lat, long, meshes, longShift } = this;
-		const [ star, line ] = meshes;
+		const { lat, long, elements } = this;
+		const [ star, line ] = elements;
 		const [ x, y, z ] = coordToNormalXyz(lat, long + longShift, starHeight);
 		line.rotation.x = 0;
 		line.rotation.y = 0;
@@ -75,7 +130,7 @@ const stars = almanac.map(star => {
 
 const updateCamera = () => {
 	let { lat, long, height } = observer;
-	const [ x, y, z ] = coordToNormalXyz(lat, long, height, E_RAD);
+	let [ x, y, z ] = coordToNormalXyz(lat, long, height, E_RAD);
 	camera.position.x = x;
 	camera.position.y = y;
 	camera.position.z = z;
@@ -83,6 +138,10 @@ const updateCamera = () => {
 	camera.near = height/E_RAD/2;
 	camera.far = height/E_RAD + 2;
 	camera.updateProjectionMatrix();
+	[ x, y, z ] = coordToNormalXyz(lat, long, mainLightDistance, 1);
+	mainLight.position.x = x;
+	mainLight.position.y = y;
+	mainLight.position.z = z;
 };
 
 const moveDown = () => {
@@ -96,8 +155,8 @@ const moveUp = () => {
 };
 
 const goTo = (lat, long) => {
-	observer.lat = lat;
-	observer.long = long;
+	observer.lat = Math.max(-90, Math.min(90, lat));
+	observer.long = (long%360 + 360 + 180)%360 - 180;
 	updateCamera();
 };
 
@@ -120,13 +179,6 @@ addResource(
 	},
 );
 
-const addLight = () => {
-	scene.add(new THREE.AmbientLight(0x112244));
-	const light = new THREE.PointLight(0xffeedd, 2, 100);
-	light.position.set(0, 0, 55);
-	scene.add(light);
-};
-
 const bindCanvas = (canvas) => {
 	canvas.addEventListener('wheel', e => {
 		if (e.deltaY > 0) moveUp();
@@ -144,11 +196,11 @@ const bindCanvas = (canvas) => {
 		if (e.button !== 0) return;
 		const { x, y, nx, ny } = parseOffset(e);
 		startClick = {
-			lat: observer.lat,
-			long: observer.long,
-			x, y,
-			nx, ny,
+			viewCoord: [ observer.lat, observer.long ],
+			mouseCoord: [ x, y ],
+			mouseNormal: [ nx, ny ],
 			drag: false,
+			earthCast: rayCast(nx, ny)[0]?.point ?? null,
 		};
 	});
 	canvas.addEventListener('mousemove', e => {
@@ -158,8 +210,8 @@ const bindCanvas = (canvas) => {
 		}
 		if (startClick === null) return;
 		const { x, y, nx, ny } = parseOffset(e);
-		const dx = x - startClick.x;
-		const dy = y - startClick.y;
+		const dx = x - startClick.mouseCoord[0];
+		const dy = y - startClick.mouseCoord[1];
 		if (startClick.drag === false) {
 			const dist = Math.sqrt(dx*dx + dy*dy);
 			if (dist >= MOUSE_DRAG_DIST) {
@@ -169,15 +221,14 @@ const bindCanvas = (canvas) => {
 		if (startClick.drag === false) {
 			return;
 		}
-		const dnx = nx - startClick.nx;
-		const dny = ny - startClick.ny;
-		goTo(startClick.lat - dny*90, startClick.long - dnx*180);
+		const dnx = nx - startClick.mouseNormal[0];
+		const dny = ny - startClick.mouseNormal[1];
+		goTo(startClick.viewCoord[0] - dny*90, startClick.viewCoord[1] - dnx*180);
 	});
 };
 
 const init = async () => {
 
-	addLight();
 	updateCamera();
 
 	const renderer = new THREE.WebGLRenderer();
@@ -192,14 +243,13 @@ const init = async () => {
 	
 	function animate() {
 		requestAnimationFrame(animate);
-		step();
 		renderer.render(scene, camera);
 	}
 	animate();
 };
 
 const createEarthMash = () => {
-	const texture = new THREE.TextureLoader().load('texture.jpg');
+	const texture = new THREE.TextureLoader().load('texture-hd.jpg');
 	const material = new THREE.MeshStandardMaterial({ map: texture });
 	const geometry = resources.sphere_geometry;
 	const mesh = new THREE.Mesh(geometry, material);
@@ -207,11 +257,28 @@ const createEarthMash = () => {
 };
 
 const onload = () => {
-	scene.add(createEarthMash());
-	stars.forEach(star => star.meshes.forEach(mesh => scene.add(mesh)));
-};
-
-const step = () => {
+	earth = createEarthMash();
+	scene.add(earth);
+	stars.forEach(star => star.elements.forEach(element => scene.add(element)));
 };
 
 init();
+
+const ghatxt = document.querySelector('#ghatxt');
+document.querySelector('#ariesgha').oninput = function () {
+	longShift = this.value/24*360;
+	stars.forEach(star => star.update());
+	let t = (this.value*3600).toFixed(1)*1;
+	let s = t%60;
+	t = Math.round((t - s)/60);
+	let m = t%60;
+	let h = Math.round((t - m)/60);
+	const text = `${
+		h.toString().padStart(2, '0')
+	}h${
+		m.toString().padStart(2, '0')
+	}m${
+		s.toString().padStart(2, '0')
+	}s`;
+	ghatxt.innerText = text;
+};
