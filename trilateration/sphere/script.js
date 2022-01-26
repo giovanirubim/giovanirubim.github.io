@@ -68,7 +68,7 @@ putCircleAt(-16.7479, 144.0345, 19.6166);
 putCircleAt(-8.1782, 121.4034, 31.4601);
 putCircleAt(5.1676, 157.618, 44.7216);
 
-let longShift = 0;
+let ariesGHA = 0;
 let earth;
 const rayCast = (nx, ny) => {
 	mouse.x = nx;
@@ -109,12 +109,12 @@ class Star {
 	update() {
 		const { lat, long, elements } = this;
 		const [ star, line ] = elements;
-		const [ x, y, z ] = coordToNormalXyz(lat, long + longShift, starHeight);
+		const [ x, y, z ] = coordToNormalXyz(lat, long - ariesGHA, starHeight);
 		line.rotation.x = 0;
 		line.rotation.y = 0;
 		line.rotation.z = 0;
 		line.rotateX(- lat/180*Math.PI);
-		line.rotateOnWorldAxis(worldY, (long + longShift)/180*Math.PI);
+		line.rotateOnWorldAxis(worldY, (long - ariesGHA)/180*Math.PI);
 		star.position.x = x;
 		star.position.y = y;
 		star.position.z = z;
@@ -266,19 +266,7 @@ init();
 
 const ghatxt = document.querySelector('#ghatxt');
 document.querySelector('#ariesgha').oninput = function () {
-	longShift = this.value/24*360;
+	ariesGHA = this.value*1;
 	stars.forEach(star => star.update());
-	let t = (this.value*3600).toFixed(1)*1;
-	let s = t%60;
-	t = Math.round((t - s)/60);
-	let m = t%60;
-	let h = Math.round((t - m)/60);
-	const text = `${
-		h.toString().padStart(2, '0')
-	}h${
-		m.toString().padStart(2, '0')
-	}m${
-		s.toString().padStart(2, '0')
-	}s`;
-	ghatxt.innerText = text;
+	ghatxt.innerText = ariesGHA.toFixed(1)*1 + '°';
 };
