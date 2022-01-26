@@ -27,6 +27,9 @@ textarea {
 	padding: 10px 20px;
 	margin-top: 10px;
 	box-shadow: -5px 5px 20px #000;
+	width: 410px;
+	height: 484px;
+	overflow-y: auto;
 }
 .option {
 	margin-top: 10px;
