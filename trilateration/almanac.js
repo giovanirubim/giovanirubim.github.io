@@ -76,7 +76,7 @@ const stars = `
 });
 
 export const calcAriesGHA = (time) => {
-	const angle = (ALIGN_TIME - time)*MS_TO_DEGREE;
+	const angle = (time - ALIGN_TIME)*MS_TO_DEGREE;
 	return (angle%360 + 360)%360;
 };
 

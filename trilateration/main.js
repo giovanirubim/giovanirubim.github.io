@@ -188,7 +188,7 @@ const processStar = (star) => {
 	}
 	time = parseTime(time);
 	let ariesGHA = Almanac.calcAriesGHA(time);
-	addPaperLine(`GHA of Aries = ${strAngle(ariesGHA)}`)
+	addPaperLine(`GHA Aries = ${strAngle(ariesGHA)}`)
 	if (radec == null) {
 		radec = Almanac.findRaDec(name);
 		if (!radec) {
@@ -197,9 +197,10 @@ const processStar = (star) => {
 	}
 	let [ ra, dec ] = parseRaDec(radec);
 	let lat = dec;
-	let starSHA = ra/24*360;
-	addPaperLine(`SHA = ${strAngle(starSHA)}`);
-	let long = (starSHA + ariesGHA + 180)%360 - 180;
+	let starSHA = (24 - ra)/24*360%360;
+	const starGHA = (starSHA + ariesGHA)%360;
+	addPaperLine(`SHA star = ${strAngle(starSHA)} // GHA star = ${strAngle(starGHA)}`);
+	let long = (360 + 180 - starGHA)%360 - 180;
 	addPaperLine(`GP = ${strLat(lat)}, ${strLong(long)}`);
 	alt = parseAlt(alt);
 	let arc = 90 - alt;
