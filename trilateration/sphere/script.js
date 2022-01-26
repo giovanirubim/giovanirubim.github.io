@@ -17,10 +17,11 @@ const camera = new THREE.PerspectiveCamera(
 	1000,
 );
 const lineMaterial = new THREE.LineBasicMaterial({
-	color: 0xffffff,
+	color: 0x77bbff,
 	transparent: true,
-	opacity: 0.25,
+	opacity: 0.75,
 });
+const circleOfEqualAltitudeMaterial = new THREE.LineBasicMaterial({ color: 0xffbb77 });
 const circleGeometry = new THREE.BufferGeometry().setFromPoints(
 	new Array(360).fill().map((_, i) => {
 		const x = Math.cos(i/180*Math.PI);
@@ -41,13 +42,7 @@ const coordToNormalXyz = (lat, long, height = 0, radius = 1) => {
 	return [ x, y, z ];
 };
 
-const putCircleAt = (lat, long, rad) => {
-	const circle = new THREE.Line(
-		circleGeometry,
-		new THREE.LineBasicMaterial({
-			color: 0xffbb77,
-		}),
-	);
+const setCircle = (circle, lat, long, rad) => {
 	const [ x, y, z ] = coordToNormalXyz(lat, long);
 	const dist = Math.cos(rad*TO_RAD);
 	const scale = Math.sin(rad*TO_RAD);
@@ -64,9 +59,10 @@ const putCircleAt = (lat, long, rad) => {
 	scene.add(circle);
 };
 
-putCircleAt(-16.7479, 144.0345, 19.6166);
-putCircleAt(-8.1782, 121.4034, 31.4601);
-putCircleAt(5.1676, 157.618, 44.7216);
+const addCircleAt = (material, lat, long, rad) => {
+	const circle = new THREE.Line(circleGeometry, material);
+	setCircle(circle, lat, long, rad);
+};
 
 let ariesGHA = 0;
 let earth;
