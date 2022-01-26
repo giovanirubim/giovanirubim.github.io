@@ -37,6 +37,7 @@ const strAngle = (val) => {
 };
 const strLat = (val) => {
 	let str = strAngle(val);
+	if (useDecimals) return str;
 	if (str.startsWith('-')) {
 		str += 'S';
 	} else {
@@ -47,6 +48,7 @@ const strLat = (val) => {
 };
 const strLong = (val) => {
 	let str = strAngle(val);
+	if (useDecimals) return str;
 	if (str.startsWith('-')) {
 		str += 'W';
 	} else {
