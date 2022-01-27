@@ -86,17 +86,14 @@ const example = `
 
 	Star: Antares
 	Time: 2022-01-15 00:57:38 UTC-4
-	RA/DEC: 16h30m43.64s / -26 28 43.2
 	ALT: 50.868722
 
 	Star: Arcturus
 	Time: 2022-01-15 01:07:06 UTC-4
-	RA/DEC: 14h16m39.27s / 19.06511
 	ALT: +35°50'16"
 
 	Star: Vega
 	Time: 2022-01-15 01:13:20 UTC-4
-	RA/DEC: 18h37m38.64s / 38°48'09.5"
 	ALT: 58 15 35.4
 
 `.trim().replace(/[\t\x20]*\n[\t\x20]*/g, '\n');
