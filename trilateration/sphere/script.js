@@ -1,13 +1,11 @@
 const E_RAD = 6371230;
 const TO_RAD = Math.PI/180;
+const TO_DEG = 180/Math.PI;
 const MOUSE_DRAG_DIST = 5;
 const LEFT_BUTTON = 1;
 const mainLightDistance = 1;
-const circleHeight = 0.1;
-const starRadius = 0.005;
-const starHeight = - starRadius;
-const starLineGap = - 0.05;
-const starLineEnd = 1 + starHeight - starRadius - starLineGap;
+const STAR_RADIUS = 0.005;
+const STAR_HEIGHT = - STAR_RADIUS;
 
 const worldX = new THREE.Vector3(1, 0, 0);
 const worldY = new THREE.Vector3(0, 1, 0);
@@ -18,10 +16,19 @@ const scene = new THREE.Scene();
 const textureLoader = new THREE.TextureLoader();
 const camera = new THREE.PerspectiveCamera(
 	45,
-	window.innerWidth/window.innerHeight,
+	1,
 	0.1,
 	1000,
 );
+const renderer = new THREE.WebGLRenderer();
+
+let ariesGHA = 0;
+
+const resize = (width, height) => {
+	renderer.setSize(width, height);
+	camera.aspect = width/height;
+	camera.updateProjectionMatrix();
+};
 
 const textures = {
 	earth: new THREE.TextureLoader().load('texture-hd.jpg'),
@@ -33,14 +40,10 @@ const textures = {
 };
 const materials = {
 	earth: new THREE.MeshStandardMaterial({ map: textures.earth }),
-	line: new THREE.LineBasicMaterial({
-		color: 0x77bbff,
-		// transparent: true,
-		// opacity: 0.75,
-	}),
+	line: new THREE.LineBasicMaterial({ color: 0x77bbff }),
 };
 const geometries = {
-	star: new THREE.SphereGeometry(starRadius, 12, 6),
+	star: new THREE.SphereGeometry(STAR_RADIUS, 12, 6),
 	smoothSphere: new THREE.SphereGeometry(1, 90, 45),
 };
 
@@ -53,10 +56,10 @@ const preview = new THREE.Mesh(
 		opacity: 0.5,
 	}),
 );
-preview.scale.x = -1.01;
-preview.scale.y = 1.01;
-preview.scale.z = 1.01;
-preview.rotation.y = - Math.PI;
+preview.scale.x = -1.001;
+preview.scale.y = 1.001;
+preview.scale.z = 1.001;
+preview.rotation.y = - Math.PI + 0.005;
 scene.add(preview);
 
 const circleOfEqualAltitudeMaterial = new THREE.LineBasicMaterial({ color: 0xffbb77 });
@@ -67,6 +70,28 @@ const circleGeometry = new THREE.BufferGeometry().setFromPoints(
 		return new THREE.Vector3(x, y, 0);
 	}),
 );
+
+class Star {
+	constructor(lat, long, color = 0xffffff) {
+		const material = new THREE.MeshBasicMaterial({ color });
+		const star = new THREE.Mesh(geometries.star, material);
+		this.lat = lat;
+		this.long = long;
+		this.elements = [ star ];
+		const [ x, y, z ] = coordToNormalXyz(lat, long - ariesGHA, STAR_HEIGHT + STAR_RADIUS);
+		star.position.x = x;
+		star.position.y = y;
+		star.position.z = z;
+	}
+}
+
+const xyzToCoord = ([ x, y, z ]) => {
+	const len = Math.sqrt(x*x + y*y + z*z);
+	const len2d = Math.sqrt(x*x + z*z);
+	const lat = Math.asin(y/len);
+	const long = x >= 0 ? Math.acos(z/len2d) : - Math.acos(z/len2d);
+	return [ lat, long ];
+};
 
 const coordToNormalXyz = (lat, long, height = 0, radius = 1) => {
 	lat = lat/180*Math.PI;
@@ -101,8 +126,16 @@ const addCircleAt = (material, lat, long, rad) => {
 	setCircle(circle, lat, long, rad);
 };
 
-let ariesGHA = 0;
-let earth;
+const earth = new THREE.Mesh(geometries.smoothSphere, materials.earth);
+scene.add(earth);
+
+almanac.forEach(({ ra, dec }) => {
+	const lat = dec;
+	const long = (ra/24*360 + 180)%360 - 180;
+	const star = new Star(lat, long);
+	star.elements.forEach(element => scene.add(element));
+});
+
 const rayCast = (nx, ny) => {
 	mouse.x = nx;
 	mouse.y = ny;
@@ -116,42 +149,6 @@ const mainLight = new THREE.PointLight(0xffeedd, 0.8, 100);
 scene.add(mainLight);
 
 const observer = { lat: 0, long: 0, height: E_RAD*3 };
-
-class Star {
-	constructor(lat, long, color = 0xffffff) {
-		const material = new THREE.MeshBasicMaterial({
-			transparent: false,
-			// opacity: 0.7,
-			color,
-		});
-		const star = new THREE.Mesh(geometries.star, material);
-		const line = new THREE.Line(
-			new THREE.BufferGeometry().setFromPoints([
-				new THREE.Vector3(0, 0, 0),
-				new THREE.Vector3(0, 0, starLineEnd),
-			]),
-			materials.line,
-		);
-		this.lat = lat;
-		this.long = long;
-		this.elements = [ star, line ];
-		const [ x, y, z ] = coordToNormalXyz(lat, long - ariesGHA, starHeight + starRadius);
-		line.rotation.x = 0;
-		line.rotation.y = 0;
-		line.rotation.z = 0;
-		line.rotateX(- lat/180*Math.PI);
-		line.rotateOnWorldAxis(worldY, (long - ariesGHA)/180*Math.PI);
-		star.position.x = x;
-		star.position.y = y;
-		star.position.z = z;
-	}
-}
-
-const stars = almanac.map(star => {
-	let lat = star.dec;
-	let long = (star.ra/24*360 + 180)%360 - 180;
-	return new Star(lat, long);
-});
 
 const updateCamera = () => {
 	let { lat, long, height } = observer;
@@ -232,39 +229,30 @@ const bindCanvas = (canvas) => {
 		const dny = ny - startClick.mouseNormal[1];
 		goTo(startClick.viewCoord[0] - dny*90, startClick.viewCoord[1] - dnx*180);
 	});
+	canvas.addEventListener('click', e => {
+		if (startClick?.drag) {
+			return;
+		}
+		const { x, y, nx, ny } = parseOffset(e);
+		const point = rayCast(nx, ny)?.[0]?.point;
+		if (!point) return;
+		const coord = xyzToCoord(point);
+		console.log(coord.map(x => x*TO_DEG));
+	});
 };
 
-const init = async () => {
+updateCamera();
 
-	updateCamera();
+resize(window.innerWidth, window.innerHeight);
 
-	const renderer = new THREE.WebGLRenderer();
-	renderer.setSize(window.innerWidth, window.innerHeight);
-	
-	document.body.appendChild(renderer.domElement);
-	bindCanvas(renderer.domElement);
-	
-	onload();
-	
-	function animate() {
-		requestAnimationFrame(animate);
-		renderer.render(scene, camera);
-	}
-	animate();
-};
+document.body.appendChild(renderer.domElement);
+bindCanvas(renderer.domElement);
 
-const createEarthMash = () => {
-	const mesh = new THREE.Mesh(geometries.smoothSphere, materials.earth);
-	return mesh;
-};
-
-const onload = () => {
-	earth = createEarthMash();
-	scene.add(earth);
-	stars.forEach(star => star.elements.forEach(element => scene.add(element)));
-};
-
-init();
+function animate() {
+	requestAnimationFrame(animate);
+	renderer.render(scene, camera);
+}
+animate();
 
 const ghatxt = document.querySelector('#ghatxt');
 document.querySelector('#ariesgha').oninput = function () {
@@ -273,3 +261,6 @@ document.querySelector('#ariesgha').oninput = function () {
 	earth.rotation.y = ariesGHA*TO_RAD;
 	updateCamera();
 };
+
+window.addEventListener('resize', () => resize(window.innerWidth, window.innerHeight));
+goTo(0, 0);
