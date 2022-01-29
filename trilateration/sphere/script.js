@@ -1,28 +1,138 @@
-const E_RAD = 6371230;
-const TO_RAD = Math.PI/180;
-const TO_DEG = 180/Math.PI;
-const MOUSE_DRAG_DIST = 5;
+// Global values
+const { PI } = Math;
+const TAU = PI*2;
+const TO_RAD = PI/180;
+const TO_DEG = 180/PI;
+const D180 = PI;
+const D360 = TAU;
+const D90 = PI/2;
+const D45 = PI/4;
+const MIN_DRAG_DIST = 5;
 const LEFT_BUTTON = 1;
-const mainLightDistance = 1;
+const MAIN_LIGHT_DIST = 5;
 const STAR_RADIUS = 0.005;
-const STAR_HEIGHT = - STAR_RADIUS;
-
-const worldX = new THREE.Vector3(1, 0, 0);
-const worldY = new THREE.Vector3(0, 1, 0);
-const worldZ = new THREE.Vector3(0, 0, 1);
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const scene = new THREE.Scene();
-const textureLoader = new THREE.TextureLoader();
-const camera = new THREE.PerspectiveCamera(
-	45,
-	1,
-	0.1,
-	1000,
-);
-const renderer = new THREE.WebGLRenderer();
-
+const LINES_HEIGHT = 0.1;
 let ariesGHA = 0;
+let observer = { lat: 0, long: 0, height: 4 };
+
+// Math methods
+const coordToEuclidian = (lat, long, radius = 1) => {
+	const rad2d = Math.cos(lat)*radius;
+	const x = Math.sin(long)*rad2d;
+	const y = Math.sin(lat)*radius;
+	const z = Math.cos(long)*rad2d;
+	return [ x, y, z ];
+};
+const euclidianToCoord = (x, y, z) => {
+	const len = Math.sqrt(x*x + y*y + z*z);
+	const rad2d = Math.sqrt(x*x + z*z);
+	const lat = Math.asin(y/len);
+	const long = x >= 0 ? Math.acos(z/rad2d) : - Math.acos(z/rad2d);
+	return [ lat, long ];
+};
+
+// Auxiliar
+const WORLD_X = new THREE.Vector3(1, 0, 0);
+const WORLD_Y = new THREE.Vector3(0, 1, 0);
+const WORLD_Z = new THREE.Vector3(0, 0, 1);
+const MOUSE_VEC_2 = new THREE.Vector2();
+const textureLoader = new THREE.TextureLoader();
+const raycaster = new THREE.Raycaster();
+
+// Basic elements
+const scene = new THREE.Scene();
+const renderer = new THREE.WebGLRenderer();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+
+// Textures
+const textures = {
+	earth: (() => {
+		const texture = new THREE.TextureLoader().load('texture-hd.jpg');
+		texture.wrapS = THREE.RepeatWrapping;
+		texture.offset.x = 0.25;
+		return texture;
+	})(),
+};
+
+// Materials
+const materials = {
+	star: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+	earth: new THREE.MeshStandardMaterial({ map: textures.earth }),
+	whiteLine:  new THREE.LineBasicMaterial({ color: 0xffffff }),
+};
+
+// Geometries
+const geometries = {
+	smoothSphere: new THREE.SphereGeometry(1, 90, 45),
+	lowPloySphere: new THREE.SphereGeometry(1, 12, 6),
+	circle: new THREE.BufferGeometry().setFromPoints(
+		new Array(360).fill().map((_, i) => {
+			const angle = i*TO_RAD;
+			const x = Math.cos(angle);
+			const y = Math.sin(angle);
+			return new THREE.Vector3(x, y, 0);
+		}),
+	),
+};
+
+// Main elements
+const mainLight = new THREE.PointLight(0xffeedd, 0.8, 100);
+const earth = new THREE.Mesh(
+	geometries.smoothSphere,
+	materials.earth,
+);
+const stars = almanac.map(({ ra, dec }) => {
+	const lat = dec*TO_RAD;
+	const long = ra/24*TAU;
+	const [ x, y, z ] = coordToEuclidian(lat, long);
+	const mesh = new THREE.Mesh(
+		geometries.lowPloySphere,
+		materials.mesh,
+	);
+	mesh.scale.x = mesh.scale.y = mesh.scale.z = STAR_RADIUS;
+	mesh.position.x = x;
+	mesh.position.y = y;
+	mesh.position.z = z;
+	return { mesh };
+});
+
+// Scene
+scene.add(new THREE.AmbientLight(0x224466));
+scene.add(mainLight);
+scene.add(earth);
+stars.forEach(star => scene.add(star.mesh));
+
+const createCircle = () => {
+	const mesh = new THREE.Mesh(
+		geometries.circle,
+		materials.whiteLine,
+	);
+	mesh.scale.x = 1 + LINES_HEIGHT;
+	mesh.scale.y = 1 + LINES_HEIGHT;
+	const set = (lat, long, radius) => {
+	};
+	scene.add(mesh);
+	return { remove: () => scene.remove(mesh), set };
+};
+
+const rayCastEarth = (nx, ny) => {
+	MOUSE_VEC_2.x = nx;
+	MOUSE_VEC_2.y = ny;
+	raycaster.setFromCamera(MOUSE_VEC_2, camera);
+	const [{ point } = {}] = raycaster.intersectObjects([ earth ]) ?? [];
+	if (point === undefined) {
+		return null;
+	}
+	const { x, y, z } = point;
+	return [ x, y, z ];
+};
+
+const goTo = (lat, long, height = observer.height) => {
+	observer.lat    = Math.min(D90, Math.max(-D90, lat));
+	observer.long   = (long%D360 + D360 + D180)%D360 - D180;
+	observer.height = height;
+	updateCamera();
+};
 
 const resize = (width, height) => {
 	renderer.setSize(width, height);
@@ -30,237 +140,111 @@ const resize = (width, height) => {
 	camera.updateProjectionMatrix();
 };
 
-const textures = {
-	earth: new THREE.TextureLoader().load('texture-hd.jpg'),
-	stars: (() => {
-		const texture = textureLoader.load('stars.jpg');
-		texture.mapping = THREE.EquirectangularReflectionMapping;
-		return texture;
-	})(),
-};
-const materials = {
-	earth: new THREE.MeshStandardMaterial({ map: textures.earth }),
-	line: new THREE.LineBasicMaterial({ color: 0x77bbff }),
-};
-const geometries = {
-	star: new THREE.SphereGeometry(STAR_RADIUS, 12, 6),
-	smoothSphere: new THREE.SphereGeometry(1, 90, 45),
-};
-
-scene.background = textures.stars;
-const preview = new THREE.Mesh(
-	geometries.smoothSphere,
-	new THREE.MeshBasicMaterial({
-		map: textureLoader.load('stars.jpg'),
-		transparent: true,
-		opacity: 0.5,
-	}),
-);
-preview.scale.x = -1.001;
-preview.scale.y = 1.001;
-preview.scale.z = 1.001;
-preview.rotation.y = - Math.PI + 0.005;
-scene.add(preview);
-
-const circleOfEqualAltitudeMaterial = new THREE.LineBasicMaterial({ color: 0xffbb77 });
-const circleGeometry = new THREE.BufferGeometry().setFromPoints(
-	new Array(360).fill().map((_, i) => {
-		const x = Math.cos(i/180*Math.PI);
-		const y = Math.sin(i/180*Math.PI);
-		return new THREE.Vector3(x, y, 0);
-	}),
-);
-
-class Star {
-	constructor(lat, long, color = 0xffffff) {
-		const material = new THREE.MeshBasicMaterial({ color });
-		const star = new THREE.Mesh(geometries.star, material);
-		this.lat = lat;
-		this.long = long;
-		this.elements = [ star ];
-		const [ x, y, z ] = coordToNormalXyz(lat, long - ariesGHA, STAR_HEIGHT + STAR_RADIUS);
-		star.position.x = x;
-		star.position.y = y;
-		star.position.z = z;
-	}
-}
-
-const xyzToCoord = ([ x, y, z ]) => {
-	const len = Math.sqrt(x*x + y*y + z*z);
-	const len2d = Math.sqrt(x*x + z*z);
-	const lat = Math.asin(y/len);
-	const long = x >= 0 ? Math.acos(z/len2d) : - Math.acos(z/len2d);
-	return [ lat, long ];
-};
-
-const coordToNormalXyz = (lat, long, height = 0, radius = 1) => {
-	lat = lat/180*Math.PI;
-	long = long/180*Math.PI;
-	const xzRad = Math.cos(lat);
-	const scale = (radius + height)/radius;
-	const x = Math.sin(long)*xzRad*scale;
-	const y = Math.sin(lat)*scale;
-	const z = Math.cos(long)*xzRad*scale;
-	return [ x, y, z ];
-};
-
-const setCircle = (circle, lat, long, rad) => {
-	const [ x, y, z ] = coordToNormalXyz(lat, long);
-	const dist = Math.cos(rad*TO_RAD);
-	const scale = Math.sin(rad*TO_RAD);
-	circle.rotation.x = 0;
-	circle.rotation.y = 0;
-	circle.rotation.z = 0;
-	circle.scale.x = scale;
-	circle.scale.y = scale;
-	circle.rotateOnWorldAxis(worldX, -lat*TO_RAD);
-	circle.rotateOnWorldAxis(worldY, long*TO_RAD);
-	circle.position.x = x*dist;
-	circle.position.y = y*dist;
-	circle.position.z = z*dist;
-	scene.add(circle);
-};
-
-const addCircleAt = (material, lat, long, rad) => {
-	const circle = new THREE.Line(circleGeometry, material);
-	setCircle(circle, lat, long, rad);
-};
-
-const earth = new THREE.Mesh(geometries.smoothSphere, materials.earth);
-scene.add(earth);
-
-almanac.forEach(({ ra, dec }) => {
-	const lat = dec;
-	const long = (ra/24*360 + 180)%360 - 180;
-	const star = new Star(lat, long);
-	star.elements.forEach(element => scene.add(element));
-});
-
-const rayCast = (nx, ny) => {
-	mouse.x = nx;
-	mouse.y = ny;
-	raycaster.setFromCamera(mouse, camera);
-	return raycaster.intersectObject(earth);
-};
-
-scene.add(new THREE.AmbientLight(0x224466));
-
-const mainLight = new THREE.PointLight(0xffeedd, 0.8, 100);
-scene.add(mainLight);
-
-const observer = { lat: 0, long: 0, height: E_RAD*3 };
-
 const updateCamera = () => {
-	let { lat, long, height } = observer;
-	let currLong = long + ariesGHA;
-	let [ x, y, z ] = coordToNormalXyz(lat, currLong, height, E_RAD);
+	const { lat, long, height } = observer;
+	const [ x, y, z ] = coordToEuclidian(lat, long + ariesGHA, 1 + height);
 	camera.position.x = x;
 	camera.position.y = y;
 	camera.position.z = z;
 	camera.lookAt(0, 0, 0);
-	camera.near = height/E_RAD/2;
-	camera.far = height/E_RAD + 2;
+	camera.near = height/2;
+	camera.far = height + 1;
 	camera.updateProjectionMatrix();
-	[ x, y, z ] = coordToNormalXyz(lat, currLong, mainLightDistance, 1);
 	mainLight.position.x = x;
 	mainLight.position.y = y;
 	mainLight.position.z = z;
 };
 
-const moveDown = () => {
-	observer.height /= 1.2;
-	updateCamera();
-};
-
-const moveUp = () => {
-	observer.height *= 1.2;
-	updateCamera();
-};
-
-const goTo = (lat, long) => {
-	observer.lat = Math.max(-90, Math.min(90, lat));
-	observer.long = (long%360 + 360 + 180)%360 - 180;
-	updateCamera();
-};
-
-const bindCanvas = (canvas) => {
-	canvas.addEventListener('wheel', e => {
-		if (e.deltaY > 0) moveUp();
-		if (e.deltaY < 0) moveDown();
-	});
-	let startClick = null;
+const bindCanvas = () => {
+	const canvas = renderer.domElement;
 	const parseOffset = e => {
 		const x = e.offsetX;
 		const y = e.offsetY;
 		const nx = x/canvas.width*2 - 1;
 		const ny = 1 - y/canvas.height*2;
-		return { x, y, nx, ny };
+		return {
+			mouse: [ x, y ],
+			normal: [ nx, ny ],
+		};
 	};
+	let startClick = null;
+	canvas.addEventListener('wheel', e => {
+		if (e.deltaY < 0) {
+			observer.height /= 1.25;
+			updateCamera();
+		}
+		if (e.deltaY > 0) {
+			observer.height *= 1.25;
+			updateCamera();
+		}
+	});
 	canvas.addEventListener('mousedown', e => {
 		if (e.button !== 0) return;
-		const { x, y, nx, ny } = parseOffset(e);
 		startClick = {
-			viewCoord: [ observer.lat, observer.long ],
-			mouseCoord: [ x, y ],
-			mouseNormal: [ nx, ny ],
+			... parseOffset(e),
 			drag: false,
-			earthCast: rayCast(nx, ny)[0]?.point ?? null,
+			observer: { ...observer },
 		};
 	});
 	canvas.addEventListener('mousemove', e => {
-		if ((e.buttons & LEFT_BUTTON) === 0) {
+		if (startClick === null || (e.buttons & LEFT_BUTTON) === 0) {
 			startClick = null;
 			return;
 		}
-		if (startClick === null) return;
-		const { x, y, nx, ny } = parseOffset(e);
-		const dx = x - startClick.mouseCoord[0];
-		const dy = y - startClick.mouseCoord[1];
+		const parsed = parseOffset(e);
 		if (startClick.drag === false) {
+			const { mouse: [ ax, ay ] } = parsed;
+			const { mouse: [ bx, by ] } = startClick;
+			const dx = bx - ax;
+			const dy = by - ay;
 			const dist = Math.sqrt(dx*dx + dy*dy);
-			if (dist >= MOUSE_DRAG_DIST) {
-				startClick.drag = true;
+			if (dist < MIN_DRAG_DIST) {
+				return;
 			}
+			startClick.drag = true;
 		}
-		if (startClick.drag === false) {
-			return;
-		}
-		const dnx = nx - startClick.mouseNormal[0];
-		const dny = ny - startClick.mouseNormal[1];
-		goTo(startClick.viewCoord[0] - dny*90, startClick.viewCoord[1] - dnx*180);
+		const { normal: [ ax, ay ] } = parsed;
+		const { normal: [ bx, by ] } = startClick;
+		const dx = bx - ax;
+		const dy = by - ay;
+		goTo(
+			startClick.observer.lat  + dy*D90,
+			startClick.observer.long + dx*D180,
+		);
 	});
-	canvas.addEventListener('click', e => {
-		if (startClick?.drag) {
-			return;
-		}
-		const { x, y, nx, ny } = parseOffset(e);
-		const point = rayCast(nx, ny)?.[0]?.point;
-		if (!point) return;
-		const coord = xyzToCoord(point);
-		console.log(coord.map(x => x*TO_DEG));
+	canvas.addEventListener('dblclick', e => {
+		const point = rayCastEarth(...parseOffset(e).normal);
+		if (point === null) return;
+		const [ lat, long ] = euclidianToCoord(...point);
+		goTo(lat, long - ariesGHA);
 	});
 };
 
-updateCamera();
+const bindInputs = () => {
+	const ghaText = document.querySelector('#ghatxt');
+	const ariesGHAInput = document.querySelector('#ariesgha');
+	ariesGHAInput.addEventListener('input', () => {
+		const { value } = ariesGHAInput;
+		ariesGHA = value*TO_RAD;
+		ghaText.innerText = (value*1).toFixed(1)*1 + '°';
+		earth.rotation.y = ariesGHA;
+		updateCamera();
+	});
+};
 
-resize(window.innerWidth, window.innerHeight);
+window.addEventListener('resize', () => {
+	resize(window.innerWidth, window.innerHeight);
+});
 
-document.body.appendChild(renderer.domElement);
-bindCanvas(renderer.domElement);
-
-function animate() {
-	requestAnimationFrame(animate);
-	renderer.render(scene, camera);
-}
-animate();
-
-const ghatxt = document.querySelector('#ghatxt');
-document.querySelector('#ariesgha').oninput = function () {
-	ariesGHA = this.value*1;
-	ghatxt.innerText = ariesGHA.toFixed(1)*1 + '°';
-	earth.rotation.y = ariesGHA*TO_RAD;
+window.addEventListener('load', () => {
 	updateCamera();
-};
-
-window.addEventListener('resize', () => resize(window.innerWidth, window.innerHeight));
-goTo(0, 0);
+	resize(window.innerWidth, window.innerHeight);
+	document.body.appendChild(renderer.domElement);
+	function animate() {
+		requestAnimationFrame(animate);
+		renderer.render(scene, camera);
+	}
+	animate();
+	bindInputs();
+	bindCanvas();
+});
