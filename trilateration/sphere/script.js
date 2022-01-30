@@ -165,6 +165,8 @@ const materials = {
 			earth: { type: "t", value: textureLoader.load("texture-hd.jpg") },
 			stars: { type: "t", value: textureLoader.load("stars.jpg") },
 			ariesGHA: { value: 0 },
+			starsOpacity: { value: 1 },
+			gridOpacity: { value: 0.2 },
 		},
 		vertexShader: vertexShader,
 		fragmentShader: earthFrag,
@@ -211,10 +213,15 @@ const surfaceCircles = [];
 const surfaceGreatCircles = [];
 
 // Scene
-scene.add(new THREE.AmbientLight(0x224466));
 // scene.add(mainLight);
+scene.add(new THREE.AmbientLight(0x224466));
 scene.add(earth);
 stars.forEach(star => star.meshes.forEach(mesh => scene.add(mesh)));
+scene.background = (() => {
+	const texture = textureLoader.load('stars.jpg');
+	texture.mapping = THREE.EquirectangularReflectionMapping;
+	return texture;
+})();
 
 const rayCastEarth = (nx, ny) => {
 	MOUSE_VEC_2.x = nx;
@@ -337,10 +344,6 @@ const bindCanvas = () => {
 			startClick.observer.lat  + dy*D90,
 			startClick.observer.long + dx*D180,
 		);
-	});
-	canvas.addEventListener('dblclick', e => {
-		const coord = rayCastEarth(...parseOffset(e).normal);
-		goTo(...coord);
 	});
 };
 

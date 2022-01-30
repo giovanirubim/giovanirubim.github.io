@@ -20,6 +20,8 @@ const earthFrag = `
 	uniform sampler2D earth;
 	uniform sampler2D stars;
 	uniform float ariesGHA;
+	uniform float starsOpacity;
+	uniform float gridOpacity;
 
 	varying vec2 vUv;
 
@@ -45,17 +47,14 @@ const earthFrag = `
 		img_x = mod(img_x + 0.00067 - ariesGHA/6.283185307179586 + 1.0, 1.0);
 		float img_y = vUv.y;
 		vec4 star = texture2D(stars, vec2(img_x, img_y));
-		float mainGrid =
+		float grid =
 			gridValue(vUv.x, 36.0, 0.005) +
-			gridValue(vUv.y, 18.0, 0.005);
-		float minGrid = 
+			gridValue(vUv.y, 18.0, 0.005) +
 			gridValue(vUv.x, 360.0, 0.01) +
 			gridValue(vUv.y, 180.0, 0.01);
-		float bright = 0.0;
-		bright +=
-			oneInterval(mainGrid)*0.25 +
-			oneInterval(minGrid)*0.1;
-		bright += pow((star.r + star.g + star.b)/3.0, 1.5);
+		float bright =
+			oneInterval(grid)*gridOpacity +
+			max(max(star.r, star.g), star.b)*starsOpacity;
 		vec3 c = map.rgb + vec3(bright);
 		gl_FragColor = vec4(c, 1.0);
 	}
