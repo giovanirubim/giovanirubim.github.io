@@ -188,7 +188,7 @@ const geometries = {
 };
 
 // Main elements
-const mainLight = new THREE.PointLight(0xffeedd, 0.8, 100);
+// const mainLight = new THREE.PointLight(0xffeedd, 0.8, 100);
 const earth = new THREE.Mesh(
 	geometries.smoothSphere,
 	materials.earth,
@@ -212,7 +212,7 @@ const surfaceGreatCircles = [];
 
 // Scene
 scene.add(new THREE.AmbientLight(0x224466));
-scene.add(mainLight);
+// scene.add(mainLight);
 scene.add(earth);
 stars.forEach(star => star.meshes.forEach(mesh => scene.add(mesh)));
 
@@ -254,9 +254,9 @@ const updateCamera = () => {
 	camera.lookAt(0, 0, 0);
 	camera.near = height/2;
 	camera.far = height + 2;
-	mainLight.position.x = x;
-	mainLight.position.y = y;
-	mainLight.position.z = z;
+	// mainLight.position.x = x;
+	// mainLight.position.y = y;
+	// mainLight.position.z = z;
 	camera.updateProjectionMatrix();
 };
 
