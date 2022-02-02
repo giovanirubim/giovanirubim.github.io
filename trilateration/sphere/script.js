@@ -14,6 +14,9 @@ const MAIN_LIGHT_DIST = 5;
 const STAR_RADIUS = 0.005;
 const LINES_HEIGHT = 0.001;
 const GREAT_CIRCLE_MIN_STEP = 0.05;
+const CONE_HEIGHT = 0.05;
+const CONE_RAD = 0.01;
+const CONE_GAP = 0.001;
 const observer = { lat: 0, long: 0, height: 4 };
 let ariesGHA = 0;
 
@@ -47,35 +50,50 @@ const coordDistance = (aLat, aLong, bLat, bLong) => {
 // Model
 class SurfaceCircle {
 	constructor(lat, long, radius = 1) {
-		const mesh = new THREE.Line(
+		const circleMesh = new THREE.Line(
 			geometries.circle,
 			materials.markLine,
+		);
+		const coneMesh = new THREE.Mesh(
+			geometries.cone,
+			materials.cone,
 		);
 		this.lat = lat;
 		this.long = long;
 		this.radius = radius;
-		this.mesh = mesh;
+		this.circleMesh = circleMesh;
+		this.coneMesh = coneMesh;
 		this.update();
 		surfaceCircles.push(this);
-		scene.add(mesh);
+		scene.add(circleMesh);
+		scene.add(coneMesh);
 	}
 	update() {
-		const { mesh, lat, radius } = this;
+		const { circleMesh, coneMesh, lat, radius } = this;
 		const long = this.long + ariesGHA;
 		const len = 1 + LINES_HEIGHT;
 		const scale = Math.sin(radius)*len;
 		const [ x, y, z ] = coordToEuclidian(lat, long);
-		const dist = Math.cos(radius)*len;
-		mesh.rotation.x = 0;
-		mesh.rotation.y = 0;
-		mesh.rotation.z = 0;
-		mesh.position.x = x*dist;
-		mesh.position.y = y*dist;
-		mesh.position.z = z*dist;
-		mesh.scale.x = scale;
-		mesh.scale.y = scale;
-		mesh.rotateOnWorldAxis(WORLD_X, -lat);
-		mesh.rotateOnWorldAxis(WORLD_Y, long);
+		const circleDist = Math.cos(radius)*len;
+		const coneDist = 1 + CONE_GAP + CONE_HEIGHT/2;
+		circleMesh.rotation.x = 0;
+		circleMesh.rotation.y = 0;
+		circleMesh.rotation.z = 0;
+		circleMesh.rotateOnWorldAxis(WORLD_X, -lat);
+		circleMesh.rotateOnWorldAxis(WORLD_Y, long);
+		coneMesh.rotation.x = - D90;
+		coneMesh.rotation.y = 0;
+		coneMesh.rotation.z = 0;
+		circleMesh.position.x = x*circleDist;
+		circleMesh.position.y = y*circleDist;
+		circleMesh.position.z = z*circleDist;
+		coneMesh.rotateOnWorldAxis(WORLD_X, -lat);
+		coneMesh.rotateOnWorldAxis(WORLD_Y, long);
+		coneMesh.position.x = x*coneDist;
+		coneMesh.position.y = y*coneDist;
+		coneMesh.position.z = z*coneDist;
+		circleMesh.scale.x = scale;
+		circleMesh.scale.y = scale;
 		return this;
 	}
 	set(lat, long, radius) {
@@ -106,6 +124,7 @@ const ariesGHAUniform = new THREE.Uniform(new THREE.Vector2());
 // Materials
 const materials = {
 	star: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+	cone: new THREE.MeshBasicMaterial({ color: 0xffbb00 }),
 	earth: new THREE.ShaderMaterial({
 		uniforms: {
 			earth: {
@@ -129,6 +148,7 @@ const materials = {
 
 // Geometries
 const geometries = {
+	cone: new THREE.ConeGeometry(CONE_RAD, CONE_HEIGHT, 16),
 	smoothSphere: new THREE.SphereGeometry(1, 180, 90),
 	lowPloySphere: new THREE.SphereGeometry(1, 12, 6),
 	circle: new THREE.BufferGeometry().setFromPoints(
