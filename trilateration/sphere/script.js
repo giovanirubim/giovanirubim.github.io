@@ -152,7 +152,14 @@ const materials = {
 	star: new THREE.MeshBasicMaterial({ color: 0xffffff }),
 	earth: new THREE.ShaderMaterial({
 		uniforms: {
-			earth: { type: "t", value: textureLoader.load("texture-hd.jpg") },
+			earth: {
+				type: "t",
+				value: (() => {
+					const texture = new THREE.TextureLoader().load('texture-hd.jpg');
+					texture.wrapS = THREE.RepeatWrapping;
+					return texture;
+				})(),
+			},
 			stars: { type: "t", value: textureLoader.load("stars.jpg") },
 			ariesGHA: { value: 0 },
 			starsOpacity: { value: 1 },
@@ -161,7 +168,6 @@ const materials = {
 		vertexShader: vertexShader,
 		fragmentShader: earthFrag,
 	}),
-	// earth: new THREE.MeshStandardMaterial({ map: textures.earth }),
 	markLine: new THREE.LineBasicMaterial({ color: 0xffbb00 }),
 };
 

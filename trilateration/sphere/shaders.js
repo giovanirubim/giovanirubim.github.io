@@ -1,18 +1,14 @@
 const vertexShader = `
-
 	varying vec2 vUv;
 
-	void main()
-	{
+	void main() {
 	    vUv = uv;
-	    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+	    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
 	    gl_Position = projectionMatrix * mvPosition;
 	}
-
 `.replace(/\n\t/g, '\n').trim();
 
 const earthFrag = `
-	
 	#ifdef GL_ES
 	precision highp float;
 	#endif
@@ -25,14 +21,6 @@ const earthFrag = `
 
 	varying vec2 vUv;
 
-	float mod(float a, float b) {
-		return a - (b * floor(a/b));
-	}
-
-	float mod1(float x) {
-		return x - floor(x);
-	}
-
 	float oneInterval(float a) {
 		return min(1.0, max(0.0, a));
 	}
@@ -44,10 +32,9 @@ const earthFrag = `
 		return oneInterval(oneInterval(a) + oneInterval(b));
 	}
 
-	void main(void)
-	{
+	void main(void) {
 		vec2 uv = vUv;
-		uv.x = mod1(uv.x + 0.25);
+		uv.x = uv.x + 0.25;
 		vec4 map = texture2D(earth, uv);
 		vec4 star = texture2D(stars, vec2(
 			mod(2.0 - uv.x + 0.2507 - ariesGHA, 1.0),
@@ -63,5 +50,4 @@ const earthFrag = `
 			star.rgb*starsOpacity;
 		gl_FragColor = vec4(c, 1.0);
 	}
-
 `.replace(/\n\t/g, '\n').trim();
