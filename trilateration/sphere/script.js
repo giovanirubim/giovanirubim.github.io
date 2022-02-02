@@ -299,7 +299,6 @@ const bindInputs = () => {
 		earth.rotation.y = ariesGHA;
 		materials.earth.uniforms.ariesGHA.value = ariesGHA/TAU;
 		surfaceCircles.forEach(it => it.update());
-		surfaceGreatCircles.forEach(it => it.update());
 		updateCamera();
 	});
 };
