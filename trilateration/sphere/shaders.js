@@ -29,33 +29,38 @@ const earthFrag = `
 		return a - (b * floor(a/b));
 	}
 
+	float mod1(float x) {
+		return x - floor(x);
+	}
+
 	float oneInterval(float a) {
 		return min(1.0, max(0.0, a));
 	}
 
-	float gridValue(float val, float div, float range) {
-		val = mod(val, 1.0/div)*div;
-		float a = (range - val)/range*2.0;
-		float b = (val - (1.0 - range))/range*2.0;
+	float gridValue(float val, float sections, float thickness) {
+		val = mod(val, 1.0/sections)*sections;
+		float a = (thickness - val)/thickness*2.0;
+		float b = (val - (1.0 - thickness))/thickness*2.0;
 		return oneInterval(oneInterval(a) + oneInterval(b));
 	}
 
 	void main(void)
 	{
-		vec4 map = texture2D(earth, vec2(mod(vUv.x + 0.25, 1.0), vUv.y));
-		float img_x = 1.0 - vUv.x;
-		img_x = mod(img_x + 0.00067 - ariesGHA/6.283185307179586 + 1.0, 1.0);
-		float img_y = vUv.y;
-		vec4 star = texture2D(stars, vec2(img_x, img_y));
+		vec2 uv = vUv;
+		uv.x = mod1(uv.x + 0.25);
+		vec4 map = texture2D(earth, uv);
+		vec4 star = texture2D(stars, vec2(
+			mod(2.0 - uv.x + 0.2507 - ariesGHA, 1.0),
+			uv.y
+		));
 		float grid =
-			gridValue(vUv.x, 36.0, 0.005) +
-			gridValue(vUv.y, 18.0, 0.005) +
-			gridValue(vUv.x, 360.0, 0.01) +
-			gridValue(vUv.y, 180.0, 0.01);
-		float bright =
-			oneInterval(grid)*gridOpacity +
-			max(max(star.r, star.g), star.b)*starsOpacity;
-		vec3 c = map.rgb + vec3(bright);
+			gridValue(uv.x, 36.0, 0.005) +
+			gridValue(uv.y, 18.0, 0.005) +
+			gridValue(uv.x, 360.0, 0.01) +
+			gridValue(uv.y, 180.0, 0.01);
+		vec3 c = map.rgb +
+			vec3(oneInterval(grid)*gridOpacity) +
+			star.rgb*starsOpacity;
 		gl_FragColor = vec4(c, 1.0);
 	}
 

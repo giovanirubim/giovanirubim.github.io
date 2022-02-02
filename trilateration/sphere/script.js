@@ -144,16 +144,6 @@ const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
 
-// Textures
-const textures = {
-	// earth: (() => {
-	// 	const texture = new THREE.TextureLoader().load('texture-hd.jpg');
-	// 	texture.wrapS = THREE.RepeatWrapping;
-	// 	texture.offset.x = 0.25;
-	// 	return texture;
-	// })(),
-};
-
 // Uniforms
 const ariesGHAUniform = new THREE.Uniform(new THREE.Vector2());
 
@@ -177,7 +167,7 @@ const materials = {
 
 // Geometries
 const geometries = {
-	smoothSphere: new THREE.SphereGeometry(1, 90, 45),
+	smoothSphere: new THREE.SphereGeometry(1, 180, 90),
 	lowPloySphere: new THREE.SphereGeometry(1, 12, 6),
 	circle: new THREE.BufferGeometry().setFromPoints(
 		new Array(361).fill().map((_, i) => {
@@ -190,7 +180,6 @@ const geometries = {
 };
 
 // Main elements
-// const mainLight = new THREE.PointLight(0xffeedd, 0.8, 100);
 const earth = new THREE.Mesh(
 	geometries.smoothSphere,
 	materials.earth,
@@ -213,7 +202,6 @@ const surfaceCircles = [];
 const surfaceGreatCircles = [];
 
 // Scene
-// scene.add(mainLight);
 scene.add(new THREE.AmbientLight(0x224466));
 scene.add(earth);
 stars.forEach(star => star.meshes.forEach(mesh => scene.add(mesh)));
@@ -261,9 +249,6 @@ const updateCamera = () => {
 	camera.lookAt(0, 0, 0);
 	camera.near = height/2;
 	camera.far = height + 2;
-	// mainLight.position.x = x;
-	// mainLight.position.y = y;
-	// mainLight.position.z = z;
 	camera.updateProjectionMatrix();
 };
 
@@ -355,7 +340,7 @@ const bindInputs = () => {
 		ariesGHA = value*TO_RAD;
 		ghaText.innerText = (value*1).toFixed(1)*1 + '°';
 		earth.rotation.y = ariesGHA;
-		materials.earth.uniforms.ariesGHA.value = ariesGHA;
+		materials.earth.uniforms.ariesGHA.value = ariesGHA/TAU;
 		surfaceCircles.forEach(it => it.update());
 		surfaceGreatCircles.forEach(it => it.update());
 		updateCamera();
