@@ -14,8 +14,8 @@ const MAIN_LIGHT_DIST = 5;
 const STAR_RADIUS = 0.005;
 const LINES_HEIGHT = 0.001;
 const GREAT_CIRCLE_MIN_STEP = 0.05;
+const observer = { lat: 0, long: 0, height: 4 };
 let ariesGHA = 0;
-let observer = { lat: 0, long: 0, height: 4 };
 
 // Math methods
 const fixLong = (long) => (long%D360 + D540)%D360 - D180;
@@ -43,57 +43,6 @@ const coordDistance = (aLat, aLong, bLat, bLong) => {
 	const chord = Math.sqrt(dx*dx + dy*dy + dz*dz);
 	return chordToArc(chord);
 };
-
-class GreatCircle {
-	constructor(aCoord, bCoord) {
-		const radius = 1 + LINES_HEIGHT;
-		const first = new THREE.Vector3(...coordToEuclidian(...aCoord, radius));
-		const last = new THREE.Vector3(...coordToEuclidian(...bCoord, radius));
-		const points = [];
-		const fn = (ax, ay, az, bx, by, bz) => {
-			const dx = ax - bx;
-			const dy = ay - by;
-			const dz = az - bz;
-			const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-			if (dist <= GREAT_CIRCLE_MIN_STEP) {
-				return;
-			}
-			let mx = (ax + bx)*0.5;
-			let my = (ay + by)*0.5;
-			let mz = (az + bz)*0.5;
-			const len = Math.sqrt(mx*mx + my*my + mz*mz);
-			const scale = radius/len;
-			mx *= scale;
-			my *= scale;
-			mz *= scale;
-			fn(ax, ay, az, mx, my, mz);
-			points.push(new THREE.Vector3(mx, my, mz));
-			fn(mx, my, mz, bx, by, bz);
-		};
-		points.push(first);
-		fn(first.x, first.y, first.z, last.x, last.y, last.z);
-		points.push(last);
-		const geometry = new THREE.BufferGeometry().setFromPoints(points);
-		const mesh = new THREE.Line(
-			geometry,
-			materials.markLine,
-		);
-		this.mesh = mesh;
-		this.geometry = geometry;
-		this.update();
-		scene.add(mesh);
-		surfaceGreatCircles.push(this);
-	}
-	remove() {
-		scene.remove(this.mesh);
-		this.mesh.geometry.dispose();
-		const index = surfaceGreatCircles.indexOf(this);
-		surfaceGreatCircles.splice(index, 1);
-	}
-	update() {
-		this.mesh.rotation.y = ariesGHA;
-	}
-}
 
 // Model
 class SurfaceCircle {
@@ -127,6 +76,13 @@ class SurfaceCircle {
 		mesh.scale.y = scale;
 		mesh.rotateOnWorldAxis(WORLD_X, -lat);
 		mesh.rotateOnWorldAxis(WORLD_Y, long);
+		return this;
+	}
+	set(lat, long, radius) {
+		this.lat = lat ?? this.lat;
+		this.long = long ?? this.long;
+		this.radius = radius ?? this.radius;
+		this.update();
 		return this;
 	}
 }
@@ -205,7 +161,6 @@ const stars = almanac.map(({ ra, dec }) => {
 	return { meshes: [ mesh ] };
 });
 const surfaceCircles = [];
-const surfaceGreatCircles = [];
 
 // Scene
 scene.add(new THREE.AmbientLight(0x224466));
@@ -316,15 +271,11 @@ const bindCanvas = () => {
 			}
 			const coord = rayCastEarth(...parsed.normal);
 			if (coord === null) return;
-			if (startClick.greatCircle) {
-				startClick.greatCircle.remove();
-			} else {
+			if (!startClick.circle) {
 				startClick.circle = new SurfaceCircle(...startClick.coord);
 			}
 			startClick.circle.radius = coordDistance(...startClick.coord, ...coord);
 			startClick.circle.update();
-			const greatCircle = new GreatCircle(startClick.coord, coord);
-			startClick.greatCircle = greatCircle;
 			return;
 		}
 		const { normal: [ ax, ay ] } = parsed;
