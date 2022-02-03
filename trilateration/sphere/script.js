@@ -48,7 +48,7 @@ const coordDistance = (aLat, aLong, bLat, bLong) => {
 };
 
 // Model
-class GPCircle {
+class GpCircle {
 	constructor(lat, long, radius = 1) {
 		const circleMesh = new THREE.Line(
 			geometries.circle,
@@ -317,16 +317,14 @@ const bindCanvas = () => {
 			if (coord === null) return;
 			if (startClick.circle == null) {
 				circles.forEach(circle => circle.unselect());
-				startClick.circle = new GPCircle(...startClick.coord);
+				startClick.circle = new GpCircle(...startClick.coord);
 				startClick.circle.select();
-				latInput.value = (startClick.coord[0]*TO_DEG).toFixed(6)*1;
-				longInput.value = (startClick.coord[1]*TO_DEG).toFixed(6)*1;
 				showGpCircleBox();
 			}
 			const circle = startClick.circle;
 			circle.radius = coordDistance(...startClick.coord, ...coord);
 			circle.update();
-			radInput.value = (circle.radius*TO_DEG).toFixed(6)*1;
+			updateGpCircleBox(circle);
 			return;
 		}
 		const { normal: [ ax, ay ] } = parsed;
@@ -446,6 +444,12 @@ window.addEventListener('resize', () => {
 const gpCircleBox = document.querySelector('.gp-circle-box');
 const hideGpCircleBox = () => gpCircleBox.style.display = 'none';
 const showGpCircleBox = () => gpCircleBox.style.display = 'block';
+const updateGpCircleBox = (circle = circles.find(circle => circle.selected)) => {
+	if (circle == null) return;
+	latInput.value = (circle.lat*TO_DEG).toFixed(6)*1;
+	longInput.value = (circle.long*TO_DEG).toFixed(6)*1;
+	radInput.value = (circle.radius*TO_DEG).toFixed(6)*1;
+};
 
 const removeSelection = () => {
 	const circle = circles.find(circle => circle.selected);
@@ -458,6 +462,8 @@ const removeSelection = () => {
 	circles.at(-1)?.select();
 	if (circles.length === 0) {
 		hideGpCircleBox();
+	} else {
+		updateGpCircleBox();
 	}
 };
 
@@ -469,7 +475,9 @@ const moveCircleSelection = (offset) => {
 	let index = circles.indexOf(circle);
 	index = (index + offset + circles.length)%circles.length;
 	circle.unselect();
-	circles[index]?.select();
+	const next = circles[index];
+	next.select();
+	updateGpCircleBox(next);
 };
 
 window.addEventListener('keydown', e => {
