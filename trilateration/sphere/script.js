@@ -48,11 +48,11 @@ const coordDistance = (aLat, aLong, bLat, bLong) => {
 };
 
 // Model
-class SurfaceCircle {
+class GPCircle {
 	constructor(lat, long, radius = 1) {
 		const circleMesh = new THREE.Line(
 			geometries.circle,
-			materials.markLine,
+			materials.circle,
 		);
 		const coneMesh = new THREE.Mesh(
 			geometries.cone,
@@ -63,10 +63,27 @@ class SurfaceCircle {
 		this.radius = radius;
 		this.circleMesh = circleMesh;
 		this.coneMesh = coneMesh;
+		this.selected = false;
 		this.update();
-		surfaceCircles.push(this);
+		circles.push(this);
 		scene.add(circleMesh);
 		scene.add(coneMesh);
+	}
+	select() {
+		if (this.selected !== true) {
+			this.circleMesh.material = materials.selectedCircle;
+			this.coneMesh.material = materials.selectedCone;
+			this.selected = true;
+		}
+		return this;
+	}
+	unselect() {
+		if (this.selected !== false) {
+			this.circleMesh.material = materials.circle;
+			this.coneMesh.material = materials.cone;
+			this.selected = false;
+		}
+		return this;
 	}
 	update() {
 		const { circleMesh, coneMesh, lat, radius } = this;
@@ -103,6 +120,11 @@ class SurfaceCircle {
 		this.update();
 		return this;
 	}
+	remove() {
+		scene.remove(this.circleMesh);
+		scene.remove(this.coneMesh);
+		return this;
+	}
 }
 
 // Auxiliar
@@ -124,7 +146,6 @@ const ariesGHAUniform = new THREE.Uniform(new THREE.Vector2());
 // Materials
 const materials = {
 	star: new THREE.MeshBasicMaterial({ color: 0xffffff }),
-	cone: new THREE.MeshBasicMaterial({ color: 0xffbb00 }),
 	earth: new THREE.ShaderMaterial({
 		uniforms: {
 			earth: {
@@ -143,7 +164,10 @@ const materials = {
 		vertexShader: vertexShader,
 		fragmentShader: earthFrag,
 	}),
-	markLine: new THREE.LineBasicMaterial({ color: 0xffbb00 }),
+	cone: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+	circle: new THREE.LineBasicMaterial({ color: 0xffffff }),
+	selectedCircle: new THREE.LineBasicMaterial({ color: 0xFF7700 }),
+	selectedCone: new THREE.MeshBasicMaterial({ color: 0xFF7700 }),
 };
 
 // Geometries
@@ -180,7 +204,7 @@ const stars = almanac.map(({ ra, dec }) => {
 	mesh.position.z = z;
 	return { meshes: [ mesh ] };
 });
-const surfaceCircles = [];
+const circles = [];
 
 // Scene
 scene.add(new THREE.AmbientLight(0x224466));
@@ -292,9 +316,12 @@ const bindCanvas = () => {
 			const coord = rayCastEarth(...parsed.normal);
 			if (coord === null) return;
 			if (startClick.circle == null) {
-				startClick.circle = new SurfaceCircle(...startClick.coord);
+				circles.forEach(circle => circle.unselect());
+				startClick.circle = new GPCircle(...startClick.coord);
+				startClick.circle.select();
 				latInput.value = (startClick.coord[0]*TO_DEG).toFixed(6)*1;
 				longInput.value = (startClick.coord[1]*TO_DEG).toFixed(6)*1;
+				showGpCircleBox();
 			}
 			const circle = startClick.circle;
 			circle.radius = coordDistance(...startClick.coord, ...coord);
@@ -367,7 +394,7 @@ const addInputs = () => {
 			ariesGHA = value*TO_RAD;
 			materials.earth.uniforms.ariesGHA.value = ariesGHA/TAU;
 			earth.rotation.y = ariesGHA;
-			surfaceCircles.forEach(it => it.update());
+			circles.forEach(it => it.update());
 			updateCamera();
 		},
 	});
@@ -381,7 +408,7 @@ const addInputs = () => {
 	});
 	addRangeInput({
 		title: 'Grid',
-		min: 0, max: 100, step: 1, init: 0,
+		min: 0, max: 100, step: 1, init: 10,
 		stringify: value => value + '%',
 		onchange: value => {
 			materials.earth.uniforms.gridOpacity.value = value/100;
@@ -399,18 +426,63 @@ const addInputs = () => {
 		},
 	});
 	latInput.addEventListener('change', () => {
-		surfaceCircles.at(-1).set(latInput.value*TO_RAD, null, null);
+		if (circles.length === 0) return;
+		circles.at(-1).set(latInput.value*TO_RAD, null, null);
 	});
 	longInput.addEventListener('change', () => {
-		surfaceCircles.at(-1).set(null, longInput.value*TO_RAD, null);
+		if (circles.length === 0) return;
+		circles.at(-1).set(null, longInput.value*TO_RAD, null);
 	});
 	radInput.addEventListener('change', () => {
-		surfaceCircles.at(-1).set(null, null, radInput.value*TO_RAD);
+		if (circles.length === 0) return;
+		circles.at(-1).set(null, null, radInput.value*TO_RAD);
 	});
 };
 
 window.addEventListener('resize', () => {
 	resize(window.innerWidth, window.innerHeight);
+});
+
+const gpCircleBox = document.querySelector('.gp-circle-box');
+const hideGpCircleBox = () => gpCircleBox.style.display = 'none';
+const showGpCircleBox = () => gpCircleBox.style.display = 'block';
+
+const removeSelection = () => {
+	const circle = circles.find(circle => circle.selected);
+	if (circle == null) {
+		return;
+	}
+	const index = circles.indexOf(circle);
+	circle.remove();
+	circles.splice(index, 1);
+	circles.at(-1)?.select();
+	if (circles.length === 0) {
+		hideGpCircleBox();
+	}
+};
+
+const moveCircleSelection = (offset) => {
+	const circle = circles.find(circle => circle.selected);
+	if (circle == null) {
+		return;
+	}
+	let index = circles.indexOf(circle);
+	index = (index + offset + circles.length)%circles.length;
+	circle.unselect();
+	circles[index]?.select();
+};
+
+window.addEventListener('keydown', e => {
+	const key = e.key.toLowerCase();
+	if (key === 'del' || key === 'delete') {
+		removeSelection();
+	}
+	if (key === 'left' || key === 'arrowleft') {
+		moveCircleSelection(-1);
+	}
+	if (key === 'right' || key === 'arrowright') {
+		moveCircleSelection(+1);
+	}
 });
 
 window.addEventListener('load', () => {
