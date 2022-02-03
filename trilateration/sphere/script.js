@@ -291,11 +291,15 @@ const bindCanvas = () => {
 			}
 			const coord = rayCastEarth(...parsed.normal);
 			if (coord === null) return;
-			if (!startClick.circle) {
+			if (startClick.circle == null) {
 				startClick.circle = new SurfaceCircle(...startClick.coord);
+				latInput.value = (startClick.coord[0]*TO_DEG).toFixed(6)*1;
+				longInput.value = (startClick.coord[1]*TO_DEG).toFixed(6)*1;
 			}
-			startClick.circle.radius = coordDistance(...startClick.coord, ...coord);
-			startClick.circle.update();
+			const circle = startClick.circle;
+			circle.radius = coordDistance(...startClick.coord, ...coord);
+			circle.update();
+			radInput.value = (circle.radius*TO_DEG).toFixed(6)*1;
 			return;
 		}
 		const { normal: [ ax, ay ] } = parsed;
@@ -309,17 +313,99 @@ const bindCanvas = () => {
 	});
 };
 
-const bindInputs = () => {
-	const ghaText = document.querySelector('#ghatxt');
-	const ariesGHAInput = document.querySelector('#ariesgha');
-	ariesGHAInput.addEventListener('input', () => {
-		const { value } = ariesGHAInput;
-		ariesGHA = value*TO_RAD;
-		ghaText.innerText = (value*1).toFixed(1)*1 + '°';
-		earth.rotation.y = ariesGHA;
-		materials.earth.uniforms.ariesGHA.value = ariesGHA/TAU;
-		surfaceCircles.forEach(it => it.update());
-		updateCamera();
+const domRangeTemplate = document.querySelector('.input-range');
+domRangeTemplate.remove();
+
+const domBoolTemplate = document.querySelector('.input-bool');
+domBoolTemplate.remove();
+
+let inputCount = 0;
+let inputStride = 50;
+const addRangeInput = ({ title, init, onchange, stringify, min, max, step }) => {
+	const domElement = domRangeTemplate.cloneNode(true);
+	domElement.querySelector('.title').innerText = title;
+	const input = domElement.querySelector('input');
+	const text = domElement.querySelector('.value');
+	input.value = init;
+	input.setAttribute('min', min);
+	input.setAttribute('max', max);
+	input.setAttribute('step', step);
+	input.oninput = () => {
+		const value = input.value*1;
+		text.innerText = stringify(value);
+		onchange(value);
+	};
+	text.innerText = stringify(init);
+	domElement.style.top = 10 + inputStride*(inputCount++) + 'px';
+	document.body.appendChild(domElement);
+	onchange(init);
+	return domElement;
+};
+const addBoolInput = ({ title, init, onchange }) => {
+	const domElement = domBoolTemplate.cloneNode(true);
+	domElement.querySelector('.title').innerText = title;
+	const input = domElement.querySelector('input');
+	const text = domElement.querySelector('.value');
+	input.checked = init;
+	input.oninput = () => {
+		const value = input.checked;
+		onchange(value);
+	};
+	domElement.style.top = 10 + inputStride*(inputCount++) + 'px';
+	document.body.appendChild(domElement);
+	onchange(init);
+	return domElement;
+};
+
+const [ latInput, longInput, radInput ] = [ ...document.querySelectorAll('.gp-circle-box input') ];
+const addInputs = () => {
+	addRangeInput({
+		title: 'Aries GHA',
+		min: 0, max: 360, step: 0.1, init: 0,
+		stringify: value => value.toFixed(1)*1 + '°',
+		onchange: value => {
+			ariesGHA = value*TO_RAD;
+			materials.earth.uniforms.ariesGHA.value = ariesGHA/TAU;
+			earth.rotation.y = ariesGHA;
+			surfaceCircles.forEach(it => it.update());
+			updateCamera();
+		},
+	});
+	addRangeInput({
+		title: 'Sky reflex',
+		min: 0, max: 100, step: 1, init: 0,
+		stringify: value => value + '%',
+		onchange: value => {
+			materials.earth.uniforms.starsOpacity.value = value/100;
+		},
+	});
+	addRangeInput({
+		title: 'Grid',
+		min: 0, max: 100, step: 1, init: 0,
+		stringify: value => value + '%',
+		onchange: value => {
+			materials.earth.uniforms.gridOpacity.value = value/100;
+		},
+	});
+	addBoolInput({
+		title: 'Stars',
+		init: false,
+		onchange: enabled => {
+			if (enabled) {
+				stars.forEach(star => star.meshes.forEach(mesh => scene.add(mesh)));
+			} else {
+				stars.forEach(star => star.meshes.forEach(mesh => scene.remove(mesh)));
+			}
+		},
+	});
+	latInput.addEventListener('change', () => {
+		surfaceCircles.at(-1).set(latInput.value*TO_RAD, null, null);
+	});
+	longInput.addEventListener('change', () => {
+		surfaceCircles.at(-1).set(null, longInput.value*TO_RAD, null);
+	});
+	radInput.addEventListener('change', () => {
+		surfaceCircles.at(-1).set(null, null, radInput.value*TO_RAD);
 	});
 };
 
@@ -336,6 +422,6 @@ window.addEventListener('load', () => {
 		renderer.render(scene, camera);
 	}
 	animate();
-	bindInputs();
+	addInputs();
 	bindCanvas();
 });

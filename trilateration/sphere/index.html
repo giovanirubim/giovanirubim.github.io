@@ -11,9 +11,10 @@
 			input[type="range"] {
 				width: 600px;
 			}
-			#ghapopup {
+			.input-bool,
+			.input-range,
+			.gp-circle-box {
 				position: fixed;
-				top: 10px;
 				left: 10px;
 				border: 2px solid #555;
 				background-color: rgba(50, 50, 50, 0.8);
@@ -24,26 +25,71 @@
 				opacity: 0.5;
 				transition: opacity 0.5s;
 			}
-			#ghapopup:hover {
+			.gp-circle-box:hover,
+			.input-bool:hover,
+			.input-range:hover {
 				opacity: 1;
 			}
-			#ghapopup > * {
+			.input-bool > *,
+			.input-range > * {
 				vertical-align: middle;
 			}
-			div.label {
+			.left {
 				display: inline-block;
 				width: 135px;
+			}
+			.gp-circle-box {
+				bottom: 10px;
+			}
+			.gp-circle-box .line {
+				margin-top: 5px;
+			}
+			.gp-circle-box .line input {
+				padding: 3px;
+				border: 1px solid #666;
+				background-color: #222;
+				color: #fff;
+			}
+			.gp-circle-box .line.top {
+				margin-top: 0px;
+			}
+			.gp-circle-box .label {
+				width: 55px;
+			}
+			.gp-circle-box .label,
+			.gp-circle-box .input {
+				display: inline-block;
 			}
 		</style>
 		<script type="text/javascript" src="three.js"></script>
 		<script type="text/javascript" src="shaders.js"></script>
 	</head>
 	<body>
-		<div id="ghapopup">
-			<div class="label">
-				Aries GHA: <span id="ghatxt">0°</span>
+		<div class="input-range">
+			<div class="left">
+				<span class="title"></span>: <span class="value"></span>
 			</div>
-			<input type="range" id="ariesgha" min="0" max="360" value="0" step="0.1">
+			<input type="range">
+		</div>
+		<div class="input-bool">
+			<div class="left">
+				<span class="title"></span>: <span class="value"></span>
+			</div>
+			<input type="checkbox">
+		</div>
+		<div class="gp-circle-box">
+			<div class="line first">
+				<div class="label">Lat:</div>
+				<div class="input"><input type="text"></div>
+			</div>
+			<div class="line">
+				<div class="label">Long:</div>
+				<div class="input"><input type="text"></div>
+			</div>
+			<div class="line">
+				<div class="label">Radius:</div>
+				<div class="input"><input type="text"></div>
+			</div>
 		</div>
 	</body>
 </html>
