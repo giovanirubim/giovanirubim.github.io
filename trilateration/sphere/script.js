@@ -17,8 +17,14 @@ const GREAT_CIRCLE_MIN_STEP = 0.05;
 const CONE_HEIGHT = 0.05;
 const CONE_RAD = 0.01;
 const CONE_GAP = 0.001;
-const observer = { lat: 0, long: 0, height: 4 };
+const observer = { lat: null, long: null, height: null };
 let ariesGHA = 0;
+
+const updateObserver = (lat, long, height) => {
+	if (lat != null) observer.lat = lat;
+	if (long != null) observer.long = long;
+	if (height != null) observer.height = height;
+};
 
 // Math methods
 const fixLong = (long) => (long%D360 + D540)%D360 - D180;
@@ -233,9 +239,11 @@ const rayCastEarth = (nx, ny) => {
 };
 
 const goTo = (lat, long, height = observer.height) => {
-	observer.lat    = Math.min(D90, Math.max(-D90, lat));
-	observer.long   = (long%D360 + D360 + D180)%D360 - D180;
-	observer.height = height;
+	updateObserver(
+		Math.min(D90, Math.max(-D90, lat)),
+		(long%D360 + D360 + D180)%D360 - D180,
+		height,
+	);
 	updateCamera();
 };
 
@@ -273,11 +281,11 @@ const bindCanvas = () => {
 	let startClick = null;
 	canvas.addEventListener('wheel', e => {
 		if (e.deltaY < 0) {
-			observer.height /= 1.25;
+			updateObserver(null, null, observer.height/1.25);
 			updateCamera();
 		}
 		if (e.deltaY > 0) {
-			observer.height *= 1.25;
+			updateObserver(null, null, observer.height*1.25);
 			updateCamera();
 		}
 	});
@@ -333,7 +341,7 @@ const bindCanvas = () => {
 		const dy = by - ay;
 		goTo(
 			startClick.observer.lat  + dy*D90,
-			startClick.observer.long + dx*D180,
+			startClick.observer.long + dx*D90,
 		);
 	});
 };
@@ -495,6 +503,7 @@ window.addEventListener('keydown', e => {
 });
 
 window.addEventListener('load', () => {
+	updateObserver(0, 0, 4);
 	updateCamera();
 	resize(window.innerWidth, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
