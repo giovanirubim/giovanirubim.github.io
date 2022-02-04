@@ -60,6 +60,7 @@ const strLong = (val) => {
 
 const hourRegex = /^(\d+\s*h\s*\d+(\s*m(\s*\d+(\.\d+)?(\s*s)?)?)?)$/i;
 const degreeRegexes = [
+	/^([+\-]\s*)?\d+(\s+\d+(\.\d+)?)?$/,
 	/^(([+\-]\s*)?\d+(\s+\d+(\s+\d+(\.\d+)?)?)?)$/,
 	/^(([+\-]\s*)?\d+(\s*°\s*\d+(\s*'\s*\d+(\.\d+)?"?)?)?)$/,
 ];
@@ -112,7 +113,7 @@ const parseTime = (time) => {
 	if (!timeRegex.test(time)) {
 		throw `
 			Bad time format
-			It should be something like
+			Check out this example:
 			2022-01-22 21:32:50 +2:30
 		`;
 	}
@@ -127,8 +128,9 @@ const parseRa = (ra) => {
 	if (!hourRegex.test(ra)) {
 		throw `
 			Bad right ascension format "${ra}"
-			It should be something like
-			18h52m32.5s or 18:52
+			Check out the examples below:
+			18h52m32.5s
+			18:52
 		`;
 	}
 	return parseHours(ra);
@@ -141,8 +143,11 @@ const parseDec = (dec) => {
 	if (!degreeRegexes.find(regex => regex.test(dec))) {
 		throw `
 			Bad declination format "${dec}"
-			It should be something like
-			-26 28 43.2 or 38°48'09.5" or 13.94217
+			Check out the examples below:
+			-26 28 43.2
+			38°48'09.5"
+			-50 24.5
+			13.94217
 		`;
 	}
 	return parseDegrees(dec);
@@ -152,8 +157,9 @@ const parseRaDec = (radec) => {
 	if (!radec.includes('/')) {
 		throw `
 			Bad RA/DEC format
-			It should be something like
-			18h52m32.5s / -26°28'43.2"
+			Check out the examples below:
+			18h52m32.5s
+			-26°28'43.2"
 		`;
 	}
 	const [ ra, dec ] = radec.trim().split(/\s*\/\s*/);
@@ -170,8 +176,10 @@ const parseAlt = (alt) => {
 	if (!degreeRegexes.find(regex => regex.test(alt))) {
 		throw `
 			Bad altitude angle format "${alt}"
-			It should be something like
-			26 28 43.2 or 38°48'09.5" or 13.94217
+			Check out the examples below:
+			26 28 43.2
+			38°48'09.5"
+			13.94217
 		`;
 	}
 	return parseDegrees(alt);
@@ -189,7 +197,7 @@ const processStar = (star) => {
 	if (radec == null) {
 		radec = Almanac.findRaDec(name);
 		if (!radec) {
-			throw `Did not find the RA/DEC for ${name} in the almanac\nPlease provide the RA/DEC`;
+			throw `Did not find the RA/DEC for ${name} in the almanac\nPlease provide the RA/DEC manually`;
 		}
 	}
 	let [ ra, dec ] = parseRaDec(radec);
@@ -199,6 +207,9 @@ const processStar = (star) => {
 	addPaperLine(`SHA star = ${strAngle(starSHA)} // GHA star = ${strAngle(starGHA)}`);
 	let long = (360 + 180 - starGHA)%360 - 180;
 	addPaperLine(`GP = ${strLat(lat)}, ${strLong(long)}`);
+	if (!alt) {
+		throw `Missing altitude angle`;
+	}
 	alt = parseAlt(alt);
 	let arc = 90 - alt;
 	addPaperLine(`alt = ${
