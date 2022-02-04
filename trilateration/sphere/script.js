@@ -424,16 +424,13 @@ const addInputs = () => {
 		},
 	});
 	latInput.addEventListener('change', () => {
-		if (circles.length === 0) return;
-		circles.at(-1).set(latInput.value*TO_RAD, null, null);
+		getSelectedCircle()?.set(latInput.value*TO_RAD, null, null);
 	});
 	longInput.addEventListener('change', () => {
-		if (circles.length === 0) return;
-		circles.at(-1).set(null, longInput.value*TO_RAD, null);
+		getSelectedCircle()?.set(null, longInput.value*TO_RAD, null);
 	});
 	radInput.addEventListener('change', () => {
-		if (circles.length === 0) return;
-		circles.at(-1).set(null, null, radInput.value*TO_RAD);
+		getSelectedCircle()?.set(null, null, radInput.value*TO_RAD);
 	});
 };
 
@@ -442,9 +439,10 @@ window.addEventListener('resize', () => {
 });
 
 const gpCircleBox = document.querySelector('.gp-circle-box');
+const getSelectedCircle = () => circles.find(circle => circle.selected);
 const hideGpCircleBox = () => gpCircleBox.style.display = 'none';
 const showGpCircleBox = () => gpCircleBox.style.display = 'block';
-const updateGpCircleBox = (circle = circles.find(circle => circle.selected)) => {
+const updateGpCircleBox = (circle = getSelectedCircle()) => {
 	if (circle == null) return;
 	latInput.value = (circle.lat*TO_DEG).toFixed(6)*1;
 	longInput.value = (circle.long*TO_DEG).toFixed(6)*1;
@@ -452,7 +450,7 @@ const updateGpCircleBox = (circle = circles.find(circle => circle.selected)) => 
 };
 
 const removeSelection = () => {
-	const circle = circles.find(circle => circle.selected);
+	const circle = getSelectedCircle();
 	if (circle == null) {
 		return;
 	}
@@ -468,7 +466,7 @@ const removeSelection = () => {
 };
 
 const moveCircleSelection = (offset) => {
-	const circle = circles.find(circle => circle.selected);
+	const circle = getSelectedCircle();
 	if (circle == null) {
 		return;
 	}
@@ -482,6 +480,9 @@ const moveCircleSelection = (offset) => {
 
 window.addEventListener('keydown', e => {
 	const key = e.key.toLowerCase();
+	if (document.activeElement.tagName === 'INPUT') {
+		return;
+	}
 	if (key === 'del' || key === 'delete') {
 		removeSelection();
 	}
