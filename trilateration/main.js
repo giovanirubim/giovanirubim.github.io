@@ -12,6 +12,7 @@ let useDecimals = false;
 let [ currentMap ] = Maps.all;
 
 const args = [];
+let result = null;
 const NM_TO_MI = 1852/1609.344;
 const DEG_TO_RAD = Math.PI/180;
 const RAD_TO_DEG = 180/Math.PI;
@@ -236,6 +237,7 @@ const processStar = (star) => {
 };
 
 const doCalculations = () => {
+	result = null;
 	args.length = 0;
 	let lines = inputData.value.toLowerCase().trim().split(/\s*\n\s*/);
 	if (lines.length === 1 && lines[0] === '') {
@@ -277,19 +279,55 @@ const doCalculations = () => {
 	if (current_star != null) {
 		processStar(current_star);
 	}
-	if (args.length >= 3) {
-		const result = trilaterate(args);
-		addPaperLine(`result = ${
-			strLat(result[0]*RAD_TO_DEG)
-		}, ${
-			strLong(result[1]*RAD_TO_DEG)
-		}`)
-	}
+	result = trilaterate(args);
+	addPaperLine(`result = ${
+		strLat(result[0]*RAD_TO_DEG)
+	}, ${
+		strLong(result[1]*RAD_TO_DEG)
+	}`);
 };
 
 const project = (lat, long) => {
 	const [ nx, ny ] = currentMap.coordToNormal(lat, long);
 	return [ nx*canvas.width, ny*canvas.height ];
+};
+
+const drawResult = (lat, long) => {
+	const c = 2;
+	const [ x, y ] = project(lat, long);
+	ctx.fillStyle = '#f00';
+	ctx.beginPath();
+	ctx.moveTo(x + c, y);
+	ctx.lineTo(x + c*2, y + c);
+	ctx.lineTo(x + c*4, y + c);
+	ctx.lineTo(x + c*4, y - c);
+	ctx.lineTo(x + c*2, y - c);
+	ctx.closePath();
+	ctx.fill();
+	ctx.beginPath();
+	ctx.moveTo(x - c, y);
+	ctx.lineTo(x - c*2, y + c);
+	ctx.lineTo(x - c*4, y + c);
+	ctx.lineTo(x - c*4, y - c);
+	ctx.lineTo(x - c*2, y - c);
+	ctx.closePath();
+	ctx.fill();
+	ctx.beginPath();
+	ctx.moveTo(x, y - c);
+	ctx.lineTo(x + c, y - c*2);
+	ctx.lineTo(x + c, y - c*4);
+	ctx.lineTo(x - c, y - c*4);
+	ctx.lineTo(x - c, y - c*2);
+	ctx.closePath();
+	ctx.fill();
+	ctx.beginPath();
+	ctx.moveTo(x, y + c);
+	ctx.lineTo(x + c, y + c*2);
+	ctx.lineTo(x + c, y + c*4);
+	ctx.lineTo(x - c, y + c*4);
+	ctx.lineTo(x - c, y + c*2);
+	ctx.closePath();
+	ctx.fill();
 };
 
 const makeSpotAt = (lat, long) => {
@@ -333,6 +371,9 @@ const updateMap = () => currentMap.getImage().then(img => {
 	}
 	for (let { gp, arc } of args) {
 		makeSpotAt(...gp);
+	}
+	if (result != null) {
+		drawResult(...result);
 	}
 });
 
