@@ -46,7 +46,7 @@ const earthFrag = `
 			gridValue(uv.x, 360.0, 0.01) +
 			gridValue(uv.y, 180.0, 0.01);
 		vec3 c = map.rgb*0.9 +
-			vec3(oneInterval(grid)*gridOpacity) +
+			vec3(oneInterval(grid)*0.4*gridOpacity) +
 			star.rgb*starsOpacity;
 		gl_FragColor = vec4(c, 1.0);
 	}

@@ -12,18 +12,38 @@ const MIN_DRAG_DIST = 5;
 const LEFT_BUTTON = 1;
 const MAIN_LIGHT_DIST = 5;
 const STAR_RADIUS = 0.005;
-const LINES_HEIGHT = 0.001;
+const LINES_HEIGHT = 0.0005;
 const GREAT_CIRCLE_MIN_STEP = 0.05;
 const CONE_HEIGHT = 0.05;
 const CONE_RAD = 0.01;
 const CONE_GAP = 0.001;
 const observer = { lat: null, long: null, height: null };
+
+let dragFactor;
 let ariesGHA = 0;
 
-const updateObserver = (lat, long, height) => {
+const updateObserver = (lat, long, height, fov) => {
 	if (lat != null) observer.lat = lat;
 	if (long != null) observer.long = long;
-	if (height != null) observer.height = height;
+	if (height == null && fov == null) return;
+	if (height != null) {
+		observer.height = height;
+	}
+	if (fov != null) {
+		camera.fov = fov;
+		camera.updateProjectionMatrix();
+	}
+	const theta = camera.fov/2*TO_RAD;
+	const d = observer.height + 1;
+	const sin = Math.sin(theta)*d;
+	if (sin > 1) {
+		dragFactor = Math.acos(1/d);
+	} else {
+		const asin = Math.asin(sin);
+		const alpha = Math.max(asin, D180 - asin);
+		const f = D180 - alpha - theta;
+		dragFactor = f;
+	}
 };
 
 // Math methods
@@ -340,8 +360,8 @@ const bindCanvas = () => {
 		const dx = bx - ax;
 		const dy = by - ay;
 		goTo(
-			startClick.observer.lat  + dy*D90,
-			startClick.observer.long + dx*D90,
+			startClick.observer.lat  + dy*dragFactor,
+			startClick.observer.long + dx*dragFactor,
 		);
 	});
 };
@@ -488,22 +508,14 @@ const moveCircleSelection = (offset) => {
 
 window.addEventListener('keydown', e => {
 	const key = e.key.toLowerCase();
-	if (document.activeElement.tagName === 'INPUT') {
-		return;
-	}
-	if (key === 'del' || key === 'delete') {
-		removeSelection();
-	}
-	if (key === 'left' || key === 'arrowleft') {
-		moveCircleSelection(-1);
-	}
-	if (key === 'right' || key === 'arrowright') {
-		moveCircleSelection(+1);
-	}
+	if (document.activeElement.tagName === 'INPUT') return;
+	if (key === 'del' || key === 'delete') removeSelection();
+	if (key === 'left' || key === 'arrowleft') moveCircleSelection(-1);
+	if (key === 'right' || key === 'arrowright') moveCircleSelection(+1);
 });
 
 window.addEventListener('load', () => {
-	updateObserver(0, 0, 4);
+	updateObserver(0, 0, 1, 45);
 	updateCamera();
 	resize(window.innerWidth, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
