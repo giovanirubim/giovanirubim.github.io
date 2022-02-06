@@ -195,14 +195,11 @@ export const findMinErrorCoord = (calcError, iterations = 40) => {
 		const latShift = maxChange*HALF_PI;
 		const longShift = maxChange*PI;
 		const copy = currentCoord.slice();
-		for (let j=0; j<9; ++j) {
-			const row = j/3 | 0;
-			const col = j%3;
-			if (col === 1 && row === 1) continue;
-			const latOffset = row - 1;
-			const longOffset = col - 1;
-			const lat  = copy[0] + latOffset*latShift;
-			const long = copy[1] + longOffset*longShift;
+		for (let j=0; j<4; ++j) {
+			const bit0 = j&1;
+			const bit1 = j >> 1;
+			const lat  = copy[0] + (2*bit0 - 1)*latShift;
+			const long = copy[1] + (2*bit1 - 1)*longShift;
 			const coord = [ lat, long ];
 			fixCoord(coord);
 			const error = calcError(coord);
