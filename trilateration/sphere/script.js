@@ -19,6 +19,7 @@ const CONE_RAD = 0.01;
 const CONE_GAP = 0.001;
 const observer = { lat: null, long: null, height: null };
 
+let canvasRatio;
 let dragFactor;
 let ariesGHA = 0;
 
@@ -271,6 +272,7 @@ const resize = (width, height) => {
 	renderer.setSize(width, height);
 	camera.aspect = width/height;
 	camera.updateProjectionMatrix();
+	canvasRatio = width/height;
 };
 
 const updateCamera = () => {
@@ -361,7 +363,7 @@ const bindCanvas = () => {
 		const dy = by - ay;
 		goTo(
 			startClick.observer.lat  + dy*dragFactor,
-			startClick.observer.long + dx*dragFactor,
+			startClick.observer.long + dx*dragFactor*canvasRatio,
 		);
 	});
 };
