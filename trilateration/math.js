@@ -188,6 +188,85 @@ const fixCoord = (coord) => {
 	return coord;
 };
 
+export const findMinErrorCoord2 = (
+	calcError,
+	iterations = 16,
+	targets = 4,
+	latSplit = 4,
+	searchSpaceShrinkFactor = 0.5,
+) => {
+	const longSplit = latSplit*2;
+	const targetArr = new Array(targets);
+	const visited = {};
+	let side_x = 2;
+	let side_y = 1;
+	let step_x = side_x/longSplit;
+	let step_y = side_y/latSplit;
+	const processPoint = (x, y) => {
+		if (x < 0) x += 2
+		if (x > 2) x %= 2;
+		if (y < 0) {
+			y = - y;
+			x = (x + 1)%2;
+		}
+		if (y > 1) {
+			y = 2 - y;
+			x = (x + 1)%2;
+		}
+		const key = x + '/' + y;
+		if (visited[key] !== undefined) {
+			return;
+		}
+		visited[key] = true;
+		const coord = [
+			y*D180 - D90,
+			x*D180 - D180,
+		];
+		const error = calcError(coord);
+		const target = { x, y, error };
+		let index = targetArr.length;
+		for (; index !== 0; --index) {
+			const next = targetArr[index - 1];
+			if (next === undefined) {
+				continue;
+			}
+			if (error > next.error) {
+				break;
+			}
+			targetArr[index] = next;
+		}
+		if (index < targets) {
+			targetArr[index] = target;
+		}
+	};
+	const processTargetArea = ({ x, y }) => {
+		const base_x = x + (step_x - side_x)*0.5;
+		const base_y = y + (step_y - side_y)*0.5;
+		for (let i=0; i<latSplit; ++i) {
+			const y = base_y + i*step_y;
+			for (let j=0; j<longSplit; ++j) {
+				const x = base_x + j*step_x;
+				processPoint(x, y);
+			}
+		}
+	};
+	const shrink = () => {
+		side_x *= searchSpaceShrinkFactor;
+		side_y *= searchSpaceShrinkFactor;
+		step_x = side_x/longSplit;
+		step_y = side_y/latSplit;
+	};
+	processTargetArea({ x: 1, y: 0.5 });
+	for (let i=1; i<iterations; ++i) {
+		shrink();
+		for (let i=0; i<targets; ++i) {
+			processTargetArea(targetArr[i]);
+		}
+	}
+	const { x, y } = targetArr[0];
+	return [ y*D180 - D90, x*D180 - D180 ];
+};
+
 export const findMinErrorCoord = (calcError, iterations = 40) => {
 	let currentCoord = [0, 0];
 	let currentError = calcError(currentCoord);
@@ -229,5 +308,5 @@ export const trilaterationErrorFunction = (args) => {
 
 export const trilaterate = (args) => {
 	const calcError = trilaterationErrorFunction(args);
-	return findMinErrorCoord(calcError);
+	return findMinErrorCoord2(calcError);
 };
