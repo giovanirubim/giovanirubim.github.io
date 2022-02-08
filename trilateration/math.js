@@ -1,6 +1,7 @@
 const { PI, sin, cos, asin, acos, sqrt } = Math;
-const TAU = PI*2;
-const HALF_PI = PI/2;
+const D180 = PI;
+const D360 = PI*2;
+const D90  = PI/2;
 
 const mulMat3Mat3 = (a, b, r) => {
 	const r0 = a[0]*b[0] + a[1]*b[3] + a[2]*b[6];
@@ -148,7 +149,7 @@ export const getCoordCircle = (lat, long, radius, numberOfPoints = 32) => {
 	const mat = Mat3().buildCoordRotation(lat, long);
 	const rad = Math.sin(radius);
 	const z = Math.cos(radius);
-	const step = Math.PI*2/numberOfPoints;
+	const step = PI*2/numberOfPoints;
 	const vec = Vec3(0, 0, z);
 	const points = [];
 	for (let i=0; i<numberOfPoints; ++i) {
@@ -173,15 +174,15 @@ export const arcLengthBetweenCoords = (aLat, aLong, bLat, bLong) => {
 
 const fixCoord = (coord) => {
 	let [ lat, long ] = coord;
-	lat = lat%PI;
-	if (lat > HALF_PI) {
-		lat = PI - lat;
-		long += PI;
-	} else if (lat < -HALF_PI) {
-		lat = - (lat + PI);
-		long += PI;
+	lat = lat%D180;
+	if (lat > D90) {
+		lat = D180 - lat;
+		long += D180;
+	} else if (lat < -D90) {
+		lat = - (lat + D180);
+		long += D180;
 	}
-	long = (long%TAU + TAU + PI)%TAU - PI;
+	long = (long%D360 + D360 + D180)%D360 - D180;
 	coord[0] = lat;
 	coord[1] = long;
 	return coord;
@@ -192,8 +193,8 @@ export const findMinErrorCoord = (calcError, iterations = 40) => {
 	let currentError = calcError(currentCoord);
 	let maxChange = 0.5;
 	for (let i=0; i<iterations; ++i) {
-		const latShift = maxChange*HALF_PI;
-		const longShift = maxChange*PI;
+		const latShift = maxChange*D90;
+		const longShift = maxChange*D180;
 		const copy = currentCoord.slice();
 		for (let j=0; j<4; ++j) {
 			const bit0 = j&1;
