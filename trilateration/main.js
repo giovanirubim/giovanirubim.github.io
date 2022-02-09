@@ -84,18 +84,6 @@ const parseDegrees = (str) => {
 	return abs*sign;
 };
 
-// Broken example
-// time: 2022-01-01 14:14:39.5
-// star: star 1
-// ra/dec: 14h0 / 0
-// alt: 35
-// star: star 2
-// ra/dec: 20h0 / 30
-// alt: 30
-// star: star 3
-// ra/dec: 18h0 / 10
-// alt: 30
-
 const example = `
 
 	Star: Antares
