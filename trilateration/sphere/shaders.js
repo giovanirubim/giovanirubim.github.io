@@ -45,9 +45,17 @@ const earthFrag = `
 			gridValue(uv.y, 18.0, 0.005) +
 			gridValue(uv.x, 360.0, 0.01) +
 			gridValue(uv.y, 180.0, 0.01);
-		vec3 c = map.rgb*0.9 +
+		float starBrightness = min(
+			1.0,
+			pow(
+				max(star.r, max(star.g, star.b)),
+				2.0
+			)*2.0
+		);
+		float darkness = 1.0 - starsOpacity*0.5;
+		vec3 c = map.rgb*darkness +
 			vec3(oneInterval(grid)*0.4*gridOpacity) +
-			star.rgb*starsOpacity;
+			vec3(starBrightness*starsOpacity);
 		gl_FragColor = vec4(c, 1.0);
 	}
 `.replace(/\n\t/g, '\n').trim();

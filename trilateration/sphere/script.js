@@ -185,8 +185,8 @@ const materials = {
 			},
 			stars: { type: "t", value: textureLoader.load("stars.jpg") },
 			ariesGHA: { value: 0 },
-			starsOpacity: { value: 1 },
-			gridOpacity: { value: 0.2 },
+			starsOpacity: { value: 0.8 },
+			gridOpacity: { value: 0.4 },
 		},
 		vertexShader: vertexShader,
 		fragmentShader: earthFrag,
@@ -428,7 +428,8 @@ const addInputs = () => {
 	});
 	addRangeInput({
 		title: 'Sky reflex',
-		min: 0, max: 100, step: 1, init: 0,
+		min: 0, max: 100, step: 1,
+		init: Math.round(materials.earth.uniforms.starsOpacity.value*100),
 		stringify: value => value + '%',
 		onchange: value => {
 			materials.earth.uniforms.starsOpacity.value = value/100;
@@ -436,7 +437,8 @@ const addInputs = () => {
 	});
 	addRangeInput({
 		title: 'Grid',
-		min: 0, max: 100, step: 1, init: 10,
+		min: 0, max: 100, step: 1,
+		init: Math.round(materials.earth.uniforms.gridOpacity.value*100),
 		stringify: value => value + '%',
 		onchange: value => {
 			materials.earth.uniforms.gridOpacity.value = value/100;
