@@ -191,10 +191,37 @@ const materials = {
 		vertexShader: vertexShader,
 		fragmentShader: earthFrag,
 	}),
+	text: new THREE.LineBasicMaterial({ color: 0xffeedd }),
 	cone: new THREE.MeshBasicMaterial({ color: 0xffffff }),
 	circle: new THREE.LineBasicMaterial({ color: 0xffffff }),
 	selectedCircle: new THREE.LineBasicMaterial({ color: 0xFF7700 }),
 	selectedCone: new THREE.MeshBasicMaterial({ color: 0xFF7700 }),
+};
+
+const chars = {
+	'A': [[1, -1], [0, 1], [-1, -1], [0.6, -0.2]],
+	'B': [[-1, -1], [-1, 1], [1, 0.5], [-0.25, 0], [1, -0.5], [-1, -1]],
+	'C': [[1, -1], [-1, 0], [1, 1]],
+	'D': [[-1, -1], [-1, 1], [1, 0], [-1, -1]],
+	'E': [[1, 1], [-1, 0], [1, 0], [-1, 0], [1, -1]],
+	'F': [[1, 1], [-1, 0.5], [-1, -1], [-1, 0], [0, 0]],
+	'G': [[1, -0], [1, -1], [-1, 0], [1, 1]],
+	'H': [[-1, -1], [-1, 1], [-1, 0], [1, 0], [1, 1], [1, -1]],
+	'I': [[0, -1], [0, 1]],
+	'K': [[1, 1], [-1, 0], [-1, 0.85], [-1, -0.85], [-1, 0], [1, -1]],
+	'L': [[1, -0.25], [-1, -1], [-1, 1]],
+	'M': [[-1, -1], [-1, 1], [0, 0], [1, 1], [1, -1]],
+	'N': [[-1, -1], [-1, 1], [-1, 0.5], [1, -1], [1, 1]],
+	'O': [[0, -1], [-1, 0], [0, 1], [1, 0], [0, -1]],
+	'P': [[-1, -1], [-1, 1], [1, 0.3], [-1, -0.4]],
+	'R': [[-1, -1], [-1, 1], [1, 0.3], [-1, -0.4], [1, -1]],
+	'S': [[0, 1], [-1, 0], [1, 0], [0, -1]],
+	'T': [[0, -1], [0, 1], [-1, 1], [1, 1]],
+	'U': [[-1, 1], [-1, -1], [1, -0.5], [1, -1], [1, 1]],
+	'V': [[-1, 1], [0, -1], [1, 1]],
+	'X': [[-1, -1], [1, 1], [0, 0], [-1, 1], [1, -1]],
+	'Y': [[-1, 1], [0, 0], [0, -1], [0, 0], [1, 1]],
+	'Z': [[-1, 1], [1, 1], [-1, -1], [1, -1]],
 };
 
 // Geometries
@@ -210,6 +237,56 @@ const geometries = {
 			return new THREE.Vector3(x, y, 0);
 		}),
 	),
+	... Object.fromEntries(
+		Object.entries(chars).map(([ char, points ]) => {
+			return [
+				`char_${char}`,
+				new THREE.BufferGeometry().setFromPoints(
+					points.map(([ x, y ]) => new THREE.Vector3(x*0.5, y*0.5, 0)),
+				),
+			];
+		}),
+	),
+};
+
+const createText = (text, lat, long) => {
+	const charHeight = 0.01;
+	const upOffset = charHeight;
+	const charWidth = charHeight/2;
+	const charSpace = charWidth/2;
+	const n = text.length;
+	const length = (n - 1)*charSpace + n*charWidth;
+	let x = length*-0.5 + charWidth*0.5;
+	const euler_lat = new THREE.Euler(-lat, 0, 0);
+	const euler_long = new THREE.Euler(0, long, 0);
+	const pos = new THREE.Vector3();
+	const meshes = [];
+	for (let char of text) {
+		const geometry = geometries[`char_${char}`];
+		if (!geometry) {
+			x += charWidth + charSpace;
+			continue;
+		}
+		const mesh = new THREE.Line(
+			geometry,
+			materials.text,
+		);
+		mesh.scale.x = charWidth;
+		mesh.scale.y = charHeight;
+		mesh.rotateOnWorldAxis(WORLD_X, -lat);
+		mesh.rotateOnWorldAxis(WORLD_Y, long);
+		pos.x = x;
+		pos.y = upOffset;
+		pos.z = 1.01;
+		pos.applyEuler(euler_lat);
+		pos.applyEuler(euler_long);
+		mesh.position.x = pos.x;
+		mesh.position.y = pos.y;
+		mesh.position.z = pos.z;
+		meshes.push(mesh);
+		x += charWidth + charSpace;
+	}
+	return meshes;
 };
 
 // Main elements
@@ -217,7 +294,12 @@ const earth = new THREE.Mesh(
 	geometries.smoothSphere,
 	materials.earth,
 );
-const stars = almanac.map(({ ra, dec }) => {
+const prepareText = name => name
+	.toUpperCase()
+	.replace(/[^A-Z]/g, ' ')
+	.replace(/\s+/g, ' ')
+	.trim();
+const stars = almanac.map(({ name, ra, dec }) => {
 	const lat = dec*TO_RAD;
 	const long = ra/24*TAU;
 	const [ x, y, z ] = coordToEuclidian(lat, long);
@@ -229,7 +311,7 @@ const stars = almanac.map(({ ra, dec }) => {
 	mesh.position.x = x;
 	mesh.position.y = y;
 	mesh.position.z = z;
-	return { meshes: [ mesh ] };
+	return { meshes: [ mesh, ...createText(prepareText(name), lat, long) ] };
 });
 const circles = [];
 
