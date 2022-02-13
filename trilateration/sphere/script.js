@@ -47,6 +47,33 @@ const updateObserver = (lat, long, height, fov) => {
 	}
 };
 
+const setRotationAndPositionFor = (lat, long, target) => {
+	target.rotation.x = 0;
+	target.rotation.y = 0;
+	target.rotation.z = 0;
+	target.rotateOnWorldAxis(WORLD_X, -lat);
+	target.rotateOnWorldAxis(WORLD_Y, long);
+	const [ x, y, z ] = coordToEuclidian(lat, long);
+	target.position.x = x;
+	target.position.y = y;
+	target.position.z = z;
+};
+
+const setPositionFor = (lat, long, target) => {
+	const [ x, y, z ] = coordToEuclidian(lat, long);
+	target.position.x = x;
+	target.position.y = y;
+	target.position.z = z;
+};
+
+const setRotationFor = (lat, long, target) => {
+	target.rotation.x = 0;
+	target.rotation.y = 0;
+	target.rotation.z = 0;
+	target.rotateOnWorldAxis(WORLD_X, -lat);
+	target.rotateOnWorldAxis(WORLD_Y, long);
+};
+
 // Math methods
 const fixLong = (long) => (long%D360 + D540)%D360 - D180;
 const coordToEuclidian = (lat, long, radius = 1) => {
@@ -196,6 +223,9 @@ const materials = {
 	circle: new THREE.LineBasicMaterial({ color: 0xffffff }),
 	selectedCircle: new THREE.LineBasicMaterial({ color: 0xFF7700 }),
 	selectedCone: new THREE.MeshBasicMaterial({ color: 0xFF7700 }),
+	plane: new THREE.MeshBasicMaterial({ color: 0x444444 }),
+	vertical: new THREE.LineBasicMaterial({ color: 0x00cc44 }),
+	starDirection: new THREE.LineBasicMaterial({ color: 0xffcc00 }),
 };
 
 const chars = {
@@ -247,6 +277,11 @@ const geometries = {
 			];
 		}),
 	),
+	plane: new THREE.PlaneGeometry(1, 1),
+	beacon: new THREE.BufferGeometry().setFromPoints([
+		new THREE.Vector3(0, 0, 0),
+		new THREE.Vector3(0, 0, 10),
+	]),
 };
 
 const createText = (text, lat, long) => {
@@ -294,11 +329,7 @@ const earth = new THREE.Mesh(
 	geometries.smoothSphere,
 	materials.earth,
 );
-const prepareText = name => name
-	.toUpperCase()
-	.replace(/[^A-Z]/g, ' ')
-	.replace(/\s+/g, ' ')
-	.trim();
+
 const stars = almanac.map(({ name, ra, dec }) => {
 	const lat = dec*TO_RAD;
 	const long = ra/24*TAU;
@@ -311,9 +342,98 @@ const stars = almanac.map(({ name, ra, dec }) => {
 	mesh.position.x = x;
 	mesh.position.y = y;
 	mesh.position.z = z;
-	return { meshes: [ mesh, ...createText(prepareText(name), lat, long) ] };
+	const label = name
+		.toUpperCase()
+		.replace(/[^A-Z]/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim();
+	return {
+		x, y, z,
+		lat, long,
+		sphere: mesh,
+		meshes: [ mesh, ...createText(label, lat, long) ]
+	};
 });
+
 const circles = [];
+let referenceStar = null;
+const referenceDirection = new THREE.Line(
+	geometries.beacon,
+	materials.starDirection,
+);
+const horizon = {
+	plane: (() => {
+		const plane = new THREE.Mesh(
+			geometries.plane,
+			materials.plane,
+		);
+		plane.scale.x = 0.1;
+		plane.scale.y = 0.1;
+		plane.scale.z = 0.1;
+		return plane;
+	})(),
+	vertical: new THREE.Line(
+		geometries.beacon,
+		materials.vertical,
+	),
+	sight: new THREE.Line(
+		geometries.beacon,
+		materials.starDirection,
+	),
+	visible: false,
+	sightVisible: false,
+	place: function(lat, long) {
+		if (!this.visible) {
+			return;
+		}
+		long += ariesGHA;
+		setRotationAndPositionFor(lat, long, this.plane);
+		setRotationFor(lat, long, this.vertical);
+		if (referenceStar) {
+			this.showSight();
+			setPositionFor(lat, long, this.sight);
+			setRotationFor(referenceStar.lat, referenceStar.long, this.sight);
+		} else {
+			this.hideSight();
+		}
+	},
+	hide: function() {
+		if (!this.visible) return;
+		scene.remove(this.plane);
+		scene.remove(this.sight);
+		scene.remove(this.vertical);
+		this.visible = false;
+	},
+	show: function() {
+		if (this.visible) {
+			return;
+		}
+		scene.add(this.plane);
+		if (this.sightVisible) {
+			scene.add(this.sight)
+		}
+		scene.add(this.vertical);
+		this.visible = true;
+	},
+	showSight: function() {
+		if (this.sightVisible) {
+			return;
+		}
+		this.sightVisible = true;
+		if (this.visible) {
+			scene.add(this.sight);
+		}
+	},
+	hideSight: function() {
+		if (!this.sightVisible) {
+			return;
+		}
+		this.sightVisible = false;
+		if (this.visible) {
+			scene.remove(this.sight);
+		}
+	},
+};
 
 // Scene
 scene.add(new THREE.AmbientLight(0x224466));
@@ -341,6 +461,16 @@ const rayCastEarth = (nx, ny) => {
 	];
 };
 
+const rayCastStar = (nx, ny) => {
+	MOUSE_VEC_2.x = nx;
+	MOUSE_VEC_2.y = ny;
+	raycaster.setFromCamera(MOUSE_VEC_2, camera);
+	const meshes = stars.map(({ sphere }) => sphere);
+	const [ res ] = raycaster.intersectObjects(meshes);
+	if (res === undefined) return null;
+	return stars.find(star => res.object === star.sphere);
+};
+
 const goTo = (lat, long, height = observer.height) => {
 	updateObserver(
 		Math.min(D90, Math.max(-D90, lat)),
@@ -365,13 +495,13 @@ const updateCamera = () => {
 	camera.position.z = z;
 	camera.lookAt(0, 0, 0);
 	camera.near = height/2;
-	camera.far = height + 2;
+	camera.far = height*2 + 2;
 	camera.updateProjectionMatrix();
 };
 
 const bindCanvas = () => {
 	const canvas = renderer.domElement;
-	const parseOffset = e => {
+	const parseMouseEvent = e => {
 		const x = e.offsetX;
 		const y = e.offsetY;
 		const nx = x/canvas.width*2 - 1;
@@ -395,7 +525,7 @@ const bindCanvas = () => {
 	});
 	canvas.addEventListener('mousedown', e => {
 		if (e.button !== 0) return;
-		const parsed = parseOffset(e);
+		const parsed = parseMouseEvent(e);
 		const coord = rayCastEarth(...parsed.normal);
 		startClick = {
 			...parsed,
@@ -405,11 +535,19 @@ const bindCanvas = () => {
 		};
 	});
 	canvas.addEventListener('mousemove', e => {
+		const parsed = parseMouseEvent(e);
 		if (startClick === null || (e.buttons & LEFT_BUTTON) === 0) {
 			startClick = null;
+			if (!e.altKey) {
+				return;
+			}
+			horizon.show();
+			const coord = rayCastEarth(...parsed.normal);
+			if (coord != null) {
+				horizon.place(...coord);
+			}
 			return;
 		}
-		const parsed = parseOffset(e);
 		if (startClick.drag === false) {
 			const { mouse: [ ax, ay ] } = parsed;
 			const { mouse: [ bx, by ] } = startClick;
@@ -448,6 +586,18 @@ const bindCanvas = () => {
 			startClick.observer.long + dx*dragFactor*canvasRatio,
 		);
 	});
+	canvas.addEventListener('dblclick', e => {
+		const { normal } = parseMouseEvent(e);
+		const star = rayCastStar(...normal);
+		if (!star) return;
+		setReferenceStar(star);
+	});
+};
+
+const setReferenceStar = (star) => {
+	referenceStar = star;
+	scene.add(referenceDirection);
+	setRotationFor(star.lat, star.long, referenceDirection);
 };
 
 const domRangeTemplate = document.querySelector('.input-range');
@@ -528,7 +678,7 @@ const addInputs = () => {
 	});
 	addBoolInput({
 		title: 'Stars',
-		init: false,
+		init: true,
 		onchange: enabled => {
 			if (enabled) {
 				stars.forEach(star => star.meshes.forEach(mesh => scene.add(mesh)));
@@ -579,6 +729,34 @@ const removeSelection = () => {
 	}
 };
 
+let inputsVisible = true;
+const hideInputs = () => {
+	inputsVisible = false;
+	const selector = `.input-range,.input-bool,.gp-circle-box`;
+	[...document.querySelectorAll(selector)].forEach(item => {
+		item.style.display = 'none';
+	});
+};
+
+const showInputs = () => {
+	inputsVisible = true;
+	const selector = `.input-range,.input-bool`;
+	[...document.querySelectorAll(selector)].forEach(item => {
+		item.style.display = 'block';
+	});
+	if (circles.length) {
+		document.querySelector('.gp-circle-box').style.display = 'block';
+	}
+};
+
+const toggleInputs = () => {
+	if (inputsVisible) {
+		hideInputs();
+	} else {
+		showInputs();
+	}
+};
+
 const moveCircleSelection = (offset) => {
 	const circle = getSelectedCircle();
 	if (circle == null) {
@@ -598,6 +776,7 @@ window.addEventListener('keydown', e => {
 	if (key === 'del' || key === 'delete') removeSelection();
 	if (key === 'left' || key === 'arrowleft') moveCircleSelection(-1);
 	if (key === 'right' || key === 'arrowright') moveCircleSelection(+1);
+	if (key === 's') toggleInputs();
 });
 
 window.addEventListener('load', () => {
