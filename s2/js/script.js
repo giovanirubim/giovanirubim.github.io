@@ -1,4 +1,4 @@
-const endTime = new Date('2022-09-01T21:00:00.000-04:00');
+const endTime = new Date('2023-02-18T20:00:00-0300');
 window.onload = _ => {
 		
 	const canvas = document.querySelector("canvas");
