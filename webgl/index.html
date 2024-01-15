@@ -88,7 +88,7 @@
 		material.addTexture(texture);
 		mesh = new Mesh(createCubeGeometry(4), material);
 		mesh.localRotate(Math.PI/4, 0, Math.PI/4, "ZYX");
-		mesh.translate(0, 0, 30);
+		mesh.translate(0, 0, 10);
 		camera = new Camera(Math.atan(18/36), 16/9, 1, 72);
 		ctx = new WebGL2Context();
 		ctx.bindCanvas(document.querySelector("canvas"));

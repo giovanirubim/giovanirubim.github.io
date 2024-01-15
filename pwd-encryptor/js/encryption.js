@@ -1,80 +1,44 @@
-import * as utf8 from './utf-8.js'
+const byteToHex = (byte) => {
+	return byte.toString(16).padStart(2, '0');
+};
 
-const strToHex = (str) => utf8.encode(str)
-	.map(byte => byte.toString(16).padStart(2, 0))
-	.join('')
+const sha256 = (text) => {
+	return crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+};
 
-const hexToStr = (hex) => utf8.decode(
-	hex
-		.replace(/(\w\w)/g, '$1 ')
-		.trim()
-		.split(' ')
-		.map(hex => parseInt(hex, 16))
-)
+export const sampleCode = `/* {{instruction}} */
+(async()=>{
+	let password = prompt('{{enter_pass}}'),
+		encrypted = prompt('{{enter_encrypted}}').toLowerCase(),
+		[ s, p ] = encrypted.match(/\\w+/g),
+		buff = new TextEncoder().encode(s + password),
+		hash = new Uint8Array(await crypto.subtle.digest('SHA-256', buff)),
+		xor = p.match(/../g).map((b, i) => '0x' + b ^ hash[i]),
+		res = new TextDecoder().decode(new Uint8Array(xor).buffer);
+	alert('Recovered password: ' + res);
+})();`;
 
-const int32ToHex = (int) => {
-	let res = ''
-	for (let i=0; i<8; ++i) {
-		res = (int & 15).toString(16) + res
-		int >>>= 4
-	}
-	return res
-}
+export const encrypt = async (text, password) => {
+	const salt = 'xxx'.replace(/x/g, () => byteToHex(Math.random()*256|0));
+	const hash = new Uint8Array(await sha256(salt + password));
+	const buff = new Uint8Array(new TextEncoder().encode(text));
+	const payload = [ ...buff ].map((b, i) => byteToHex(b ^ hash[i])).join('');
+	const sumBuff = await sha256(salt + payload);
+	const checksum = byteToHex(new Uint8Array(sumBuff)[0]);
+	return `${salt}/${payload}-${checksum}`;
+};
 
-const xorHex = (a, b) => {
-	const length = Math.max(a.length, b.length)
-	let res = ''
-	for (let i=0; i<length; ++i) {
-		res += (`0x${a[i]}`^`0x${b[i]}`).toString(16)
-	}
-	return res
-}
+export const decrypt = async (encrypted, password) => {
+	const [ salt, payload, checksum ] = encrypted.toLowerCase().match(/\w+/g);
+	const hash = new Uint8Array(await sha256(salt + password));
+	const xor = payload.match(/../g).map((b, i) => '0x' + b ^ hash[i]);
+	const text = new TextDecoder().decode(new Uint8Array(xor).buffer);
+	return text;
+};
 
-export const hashString = (str) => new sjcl.hash.sha256()
-	.update(str)
-	.finalize()
-	.map(int32ToHex)
-	.join('')
-
-const randomHex = (n) => {
-	if (!n) return ''
-	return Math.floor(Math.random()*16).toString(16) + randomHex(n - 1)
-}
-
-const fixCode = (str) => str
-	.replace(/\s/g, '')
-	.toLowerCase()
-	.replace(/o/g, '0')
-	.replace(/i/g, '1')
-	.replace(/s/g, '5')
-	.replace(/z/g, '2')
-	.replace(/q/g, '9')
-	.replace(/g/g, '6')
-
-export const validCode = (code) => {
-	code = fixCode(code)
-	if (!/^[a-f\d]{6}\/[a-f\d]*-[a-f\d]{2}$/.test(code)) {
-		return false
-	}
-	const checksum = code.replace(/^\w+\/\w+-/, '')
-	const hash = hashString(code.replace(/(\w+)\/(\w+)-.*$/, '$1$2'))
-	return hash.substr(0, 2) === checksum? code: false;
-}
-
-export const encrypt = (key, text) => {
-	let salt = randomHex(6)
-	let hexText = strToHex(text)
-	let hash = hashString(salt + key).substr(0, hexText.length)
-	let encrypted = xorHex(hash, hexText)
-	let checksum = hashString(salt + encrypted).substr(0, 2)
-	let output = salt + '/' + encrypted + '-' + checksum
-	return output.toUpperCase()
-}
-
-export const decrypt = (key, input) => {
-	input = fixCode(input.toLowerCase())
-	let [, salt, encrypted] = input.match(/^(\w+)\/(\w+)-(\w+)$/)
-	let hash = hashString(salt + key).substr(0, encrypted.length)
-	let hexText = xorHex(hash, encrypted)
-	return hexToStr(hexText)
-}
+export const validSum = async (encrypted) => {
+	const [ salt, payload, checksum ] = encrypted.toLowerCase().match(/\w+/g);
+	const sumBuff = await sha256(salt + payload);
+	const sumByte = byteToHex(new Uint8Array(sumBuff)[0]);
+	return sumByte === checksum;
+};
