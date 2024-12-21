@@ -1,86 +1,103 @@
 <html>
 	<head>
-		<title></title>
-		<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'/>
-		<script type="text/javascript" src="sha1.js"></script>
-		<style type="text/css">
+		<style>
 			body {
-				margin: 10px;
-			}
-			textarea {
-				width: 100%;
-				height: 100px;
-			}
-			div {
+				background-color: #222;
 				font-family: monospace;
+			}
+			.main {
+				max-width: 600px;
+				margin: 10px auto;
+			}
+			.header {
+				font-size: 40px;
+				color: #ddd;
+				margin: 30px 0px;
+			}
+			.cards {
+				margin-top: 20px;
+				display: flex;
+				flex-direction: column;
+				gap: 20px;
+			}
+			.card {
+				border: 1px solid #444;
+				padding: 15px;
+				border-radius: 7px;
+				background-color: #262626;
+			}
+			a {
+				text-decoration: none;
+				color: #ddd;
+			}
+			.card .title {
+				font-size: 26px;
+			}
+			.card .description {
+				color: #aaa;
+				margin-top: 10px;
+				font-size: 14px;
+			}
+			.subtitle {
+				color: #aaa;
+				font-size: 20px;
 			}
 		</style>
 	</head>
 	<body>
-		<textarea></textarea>
-		<div id="result"></div>
+		<div class="main">
+			<div class="header">Entry point</div>
+			<div class="subtitle">
+				Welcome to what coma out of some of my free time a while ago.
+			</div>
+			<div class="cards"></div>
+		</div>
 	</body>
 </html>
-<script type="text/javascript">
-	const textarea = document.querySelector("textarea");
-	const result = document.querySelector("#result");
-	const isLetter = x => x.toLowerCase() !== x.toUpperCase();
-	const leftMul = x => isLetter(x) || x === ")";
-	const rightMul = x => isLetter(x) || x === "(" || x === "!";
-	function update() {
-		const src = textarea.value;
-		const idMap = {};
-		const dict = {
-			"+": "|",
-			"*": "&",
-			"~": "!"
-		};
-		window.ids = [];
-		let dst = "", lastIsId = false, last = "";
-		for (let i=0; i<src.length; ++i) {
-			const tmp = src[i];
-			if (tmp === " ") {
-				continue;
-			}
-			const chr = (dict[tmp] || tmp).toUpperCase();
-			const isId = isLetter(chr);
-			if (isId && !idMap[chr]) {
-				idMap[chr] = true;
-				ids.push(chr);
-			}
-			if (leftMul(last) && rightMul(chr)) {
-				dst += "&";
-			}
-			dst += chr;
-			last = chr;
-			lastIsId = isId;
-		}
-		result.innerHTML = "";
-		ids.sort();
-		try {
-			eval("window.f = (" + ids.join(", ") + ") => " + dst + ";");
-		} catch (e) {
-			return;
-		}
-		const size = ids.length;
-		if (!size) {
-			return;
-		}
-		const n = 1 << size;
-		let allBits = "";
-		let str = "";
-		for (let i=0; i<n; ++i) {
-			str += "<br>";
-			let bin = i.toString(2);
-			bin = "0".repeat(size - bin.length) + bin;
-			const argsStr = "[" + bin.split("").join(",") + "]";
-			const args = JSON.parse(argsStr);
-			const bit = f(...args);
-			console.log(argsStr + "=" + bit);
-			str += bin + " = " + bit;
-			allBits += bit;
-		}
-		result.innerHTML += sha1(allBits) + str;
-	}
-	textarea.addEventListener("keyup", update);
+<script>
+	const cards = [
+		[
+			"https://giovanirubim.github.io/quatiview/",
+			"Quati View",
+			"My thesis project. A tool where you can write a C code and run it step by step while visualizing the allocated structures.",
+		],
+		[
+			"/lucastower/",
+			"Lucas Tower",
+			"Lucas Tower (Tower of Hanoi) game. Drag the disks from one pole to another. Get all of them in the red one. Easier to play on mobile.",
+		],
+		[
+			"/pwd-encryptor/",
+			"Password Encryptor",
+			"Encrypts passwords using a main password.",
+		],
+		[
+			"/sorting/",
+			"Insertion Sort Visualization",
+			"Visualization of the insertion sort algorithm. Click to run the next step.",
+		],
+		["/timer/", "Timer", "Mobile (only) chess 15 min timer."],
+		[
+			"/pwd/",
+			"Password Generator",
+			"Generates passwords from a seed password and pattern.",
+		],
+		[
+			"/sunsenergy/",
+			"Sun's Energy",
+			"Animation illustrating why the angle of incidence of the sun's light on earth's surface is more relevant to how much energy we get than the distance to the sun.",
+		],
+	];
+	const cardsHTML = cards
+		.map(
+			([path, title, description]) =>
+				`<a href="${path}" target="_blank">
+					<div class="card">
+						<div class="title">${title}</div>
+						<div class="description">${description}</div>
+					</div>
+				</a>`
+		)
+		.join("");
+	document.querySelector(".cards").innerHTML = cardsHTML;
 </script>
